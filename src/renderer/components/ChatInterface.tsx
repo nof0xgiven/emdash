@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { ExternalLink, Globe, Database, Server, ChevronDown } from 'lucide-react';
+import { ExternalLink, Globe, Database, Server, ChevronDown, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import ContainerStatusBadge from './ContainerStatusBadge';
 import { useToast } from '../hooks/use-toast';
@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { TerminalPane } from './TerminalPane';
 import InstallBanner from './InstallBanner';
 import { providerMeta } from '../providers/meta';
+import { providerAssets } from '../providers/assets';
 import ProviderBar from './ProviderBar';
 import { useInitialPromptInjection } from '../hooks/useInitialPromptInjection';
 import { usePlanMode } from '@/hooks/usePlanMode';
@@ -22,7 +23,11 @@ import {
 } from '@/lib/containerRuns';
 import { useBrowser } from '@/providers/BrowserProvider';
 import { useWorkspaceTerminals } from '@/lib/workspaceTerminalsStore';
-import { getInstallCommandForProvider } from '@shared/providers/registry';
+import { useWorkspaceProviderTabs } from '@/lib/workspaceProviderTabs';
+import { cn } from '@/lib/utils';
+import { terminalSessionRegistry } from '../terminal/SessionRegistry';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
+import { getInstallCommandForProvider, PROVIDER_IDS } from '@shared/providers/registry';
 
 declare const window: Window & {
   electronAPI: {
@@ -49,8 +54,30 @@ const ChatInterface: React.FC<Props> = ({
   const [providerStatuses, setProviderStatuses] = useState<
     Record<string, { installed?: boolean; path?: string | null; version?: string | null }>
   >({});
-  const [provider, setProvider] = useState<Provider>(initialProvider || 'codex');
+  const preferredProvider = useMemo<Provider>(() => {
+    const normalize = (value?: string | null): Provider | null =>
+      value && (PROVIDER_IDS as readonly string[]).includes(value) ? (value as Provider) : null;
+    try {
+      const lastKey = `provider:last:${workspace.id}`;
+      const last = normalize(window.localStorage.getItem(lastKey));
+      if (initialProvider) return normalize(initialProvider) ?? ('codex' as Provider);
+      return last ?? ('codex' as Provider);
+    } catch {
+      return (initialProvider as Provider) || ('codex' as Provider);
+    }
+  }, [workspace.id, initialProvider]);
+
+  const {
+    tabs: providerTabs,
+    activeTab,
+    activeTabId,
+    openProviderTab,
+    setActiveTab,
+    closeTab,
+  } = useWorkspaceProviderTabs(workspace.id, preferredProvider);
+  const provider = activeTab?.provider ?? preferredProvider;
   const currentProviderStatus = providerStatuses[provider];
+  const [addMenuKey, setAddMenuKey] = useState(0);
   const browser = useBrowser();
   const [cliStartFailed, setCliStartFailed] = useState(false);
   const [containerState, setContainerState] = useState<ContainerRunState | undefined>(() =>
@@ -58,6 +85,31 @@ const ChatInterface: React.FC<Props> = ({
   );
   const reduceMotion = useReducedMotion();
   const terminalId = useMemo(() => `${provider}-main-${workspace.id}`, [provider, workspace.id]);
+  const availableProviders = useMemo(
+    () => PROVIDER_IDS.filter((id) => !providerTabs.some((tab) => tab.provider === id)),
+    [providerTabs]
+  );
+  const handleAddProviderTab = useCallback(
+    (id: Provider) => {
+      openProviderTab(id);
+      setAddMenuKey((key) => key + 1);
+    },
+    [openProviderTab]
+  );
+  const handleCloseTab = useCallback(
+    (tabId: string) => {
+      if (providerTabs.length <= 1) return;
+      const tab = providerTabs.find((t) => t.id === tabId);
+      closeTab(tabId);
+      if (tab) {
+        const termId = `${tab.provider}-main-${workspace.id}`;
+        try {
+          terminalSessionRegistry.dispose(termId);
+        } catch {}
+      }
+    },
+    [closeTab, providerTabs, workspace.id]
+  );
   const [portsExpanded, setPortsExpanded] = useState(false);
   const { activeTerminalId } = useWorkspaceTerminals(workspace.id, workspace.path);
 
@@ -171,42 +223,12 @@ const ChatInterface: React.FC<Props> = ({
     if (!active) setPortsExpanded(false);
   }, [containerState?.status, containerState?.ports?.length]);
 
-  // On workspace change, restore last-selected provider (including Droid).
-  // If a locked provider exists (including Droid), prefer locked.
+  // Ensure we always have at least one provider tab available for this workspace.
   useEffect(() => {
-    try {
-      const lastKey = `provider:last:${workspace.id}`;
-      const last = window.localStorage.getItem(lastKey) as Provider | null;
-
-      if (initialProvider) {
-        setProvider(initialProvider);
-      } else {
-        const validProviders: Provider[] = [
-          'qwen',
-          'codex',
-          'claude',
-          'droid',
-          'gemini',
-          'cursor',
-          'copilot',
-          'amp',
-          'opencode',
-          'charm',
-          'auggie',
-          'kimi',
-          'kiro',
-          'rovo',
-        ];
-        if (last && (validProviders as string[]).includes(last)) {
-          setProvider(last as Provider);
-        } else {
-          setProvider('codex');
-        }
-      }
-    } catch {
-      setProvider(initialProvider || 'codex');
+    if (!activeTab) {
+      openProviderTab(preferredProvider);
     }
-  }, [workspace.id, initialProvider]);
+  }, [activeTab, openProviderTab, preferredProvider]);
 
   // Persist last-selected provider per workspace (including Droid)
   useEffect(() => {
@@ -214,6 +236,10 @@ const ChatInterface: React.FC<Props> = ({
       window.localStorage.setItem(`provider:last:${workspace.id}`, provider);
     } catch {}
   }, [provider, workspace.id]);
+
+  useEffect(() => {
+    setCliStartFailed(false);
+  }, [provider]);
 
   useEffect(() => {
     const installed = currentProviderStatus?.installed === true;
@@ -638,7 +664,96 @@ const ChatInterface: React.FC<Props> = ({
     <div className={`flex h-full flex-col bg-white dark:bg-gray-800 ${className}`}>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="px-6 pt-4">
-          <div className="mx-auto max-w-4xl space-y-2">
+          <div className="mx-auto max-w-4xl space-y-3">
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-2 py-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+                {providerTabs.map((tab) => {
+                  const asset = providerAssets[tab.provider];
+                  const meta = providerMeta[tab.provider];
+                  const isActive = tab.id === activeTabId;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        'group flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium transition-colors',
+                        isActive
+                          ? 'bg-background text-foreground shadow-sm dark:bg-gray-800'
+                          : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-gray-800/80'
+                      )}
+                    >
+                      {asset?.logo ? (
+                        <img
+                          src={asset.logo}
+                          alt={asset.alt || meta?.label || tab.provider}
+                          className={cn(
+                            'h-4 w-4 shrink-0 rounded-sm object-contain',
+                            asset?.invertInDark ? 'dark:invert' : ''
+                          )}
+                        />
+                      ) : null}
+                      <span className="max-w-[140px] truncate">
+                        {meta?.label || asset?.name || tab.provider}
+                      </span>
+                      {providerTabs.length > 1 ? (
+                        <span
+                          role="button"
+                          tabIndex={-1}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleCloseTab(tab.id);
+                          }}
+                          className="flex h-5 w-5 items-center justify-center rounded opacity-70 transition hover:bg-muted hover:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {!providerTabs.length ? (
+                  <span className="text-xs text-muted-foreground">No agents yet.</span>
+                ) : null}
+              </div>
+              <Select
+                key={addMenuKey}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  handleAddProviderTab(value as Provider);
+                }}
+                disabled={availableProviders.length === 0}
+              >
+                <SelectTrigger className="h-8 w-8 justify-center border-dashed px-0">
+                  <Plus className="h-4 w-4" />
+                </SelectTrigger>
+                <SelectContent align="end" className="z-[120]">
+                  {availableProviders.map((id) => {
+                    const asset = providerAssets[id];
+                    const meta = providerMeta[id];
+                    return (
+                      <SelectItem key={id} value={id}>
+                        <div className="flex items-center gap-2">
+                          {asset?.logo ? (
+                            <img
+                              src={asset.logo}
+                              alt={asset.alt || meta?.label || id}
+                              className={cn(
+                                'h-4 w-4 rounded-sm object-contain',
+                                asset?.invertInDark ? 'dark:invert' : ''
+                              )}
+                            />
+                          ) : null}
+                          <span className="truncate text-sm">
+                            {meta?.label || asset?.name || id}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             {(() => {
               if (isProviderInstalled !== true) {
                 return (
@@ -668,47 +783,67 @@ const ChatInterface: React.FC<Props> = ({
         {containerStatusNode}
         <div className="mt-4 min-h-0 flex-1 px-6">
           <div
-            className={`mx-auto h-full max-w-4xl overflow-hidden rounded-md ${
+            className={cn(
+              'relative mx-auto h-full max-w-4xl overflow-hidden rounded-md',
               provider === 'charm' ? (effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white') : ''
-            }`}
+            )}
           >
-            <TerminalPane
-              id={terminalId}
-              cwd={workspace.path}
-              shell={providerMeta[provider].cli}
-              env={
-                planEnabled
-                  ? {
-                      EMDASH_PLAN_MODE: '1',
-                      EMDASH_PLAN_FILE: `${workspace.path}/.emdash/planning.md`,
+            {providerTabs.map((tab) => {
+              const isActive = tab.id === activeTabId;
+              const paneId = `${tab.provider}-main-${workspace.id}`;
+              return (
+                <div
+                  key={tab.id}
+                  className={cn(
+                    'absolute inset-0 h-full w-full transition-opacity',
+                    isActive ? 'opacity-100' : 'pointer-events-none opacity-0'
+                  )}
+                >
+                  <TerminalPane
+                    id={paneId}
+                    cwd={workspace.path}
+                    shell={providerMeta[tab.provider].cli}
+                    env={
+                      planEnabled
+                        ? {
+                            EMDASH_PLAN_MODE: '1',
+                            EMDASH_PLAN_FILE: `${workspace.path}/.emdash/planning.md`,
+                          }
+                        : undefined
                     }
-                  : undefined
-              }
-              keepAlive={true}
-              onActivity={() => {
-                try {
-                  window.localStorage.setItem(`provider:locked:${workspace.id}`, provider);
-                } catch {}
-              }}
-              onStartError={() => {
-                setCliStartFailed(true);
-              }}
-              onStartSuccess={() => {
-                setCliStartFailed(false);
-              }}
-              variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
-              themeOverride={
-                provider === 'charm'
-                  ? { background: effectiveTheme === 'dark' ? '#1f2937' : '#ffffff' }
-                  : undefined
-              }
-              contentFilter={
-                provider === 'charm' && effectiveTheme !== 'dark'
-                  ? 'invert(1) hue-rotate(180deg) brightness(1.1) contrast(1.05)'
-                  : undefined
-              }
-              className="h-full w-full"
-            />
+                    keepAlive
+                    onActivity={() => {
+                      try {
+                        window.localStorage.setItem(`provider:locked:${workspace.id}`, tab.provider);
+                      } catch {}
+                    }}
+                    onStartError={() => {
+                      if (isActive) setCliStartFailed(true);
+                    }}
+                    onStartSuccess={() => {
+                      if (isActive) setCliStartFailed(false);
+                    }}
+                    variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+                    themeOverride={
+                      tab.provider === 'charm'
+                        ? { background: effectiveTheme === 'dark' ? '#1f2937' : '#ffffff' }
+                        : undefined
+                    }
+                    contentFilter={
+                      tab.provider === 'charm' && effectiveTheme !== 'dark'
+                        ? 'invert(1) hue-rotate(180deg) brightness(1.1) contrast(1.05)'
+                        : undefined
+                    }
+                    className="h-full w-full"
+                  />
+                </div>
+              );
+            })}
+            {!providerTabs.length ? (
+              <div className="flex h-full flex-col items-center justify-center text-xs text-muted-foreground">
+                <p>No provider tabs available.</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

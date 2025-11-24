@@ -139,38 +139,28 @@ export const ProviderBar: React.FC<Props> = ({
         <div className="relative rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-center rounded-md px-4 py-3">
             <div className="flex items-center gap-3">
-              <TooltipProvider delayDuration={250}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="inline-flex h-7 cursor-default select-none items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-2 text-xs text-foreground dark:border-gray-700 dark:bg-gray-700"
-                      role="button"
-                      aria-disabled
-                      title={cfg.name}
-                    >
-                      {cfg.logo ? (
-                        <img
-                          src={cfg.logo}
-                          alt={cfg.name}
-                          title={cfg.name}
-                          className={`h-3.5 w-3.5 flex-shrink-0 rounded-sm object-contain align-middle ${provider === 'codex' || provider === 'auggie' ? 'dark:invert' : ''}`}
-                        />
-                      ) : (
-                        <div
-                          className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] bg-gray-300 text-[9px] text-gray-700 dark:bg-gray-600 dark:text-gray-200"
-                          aria-hidden
-                        >
-                          {cfg.name.slice(0, 1)}
-                        </div>
-                      )}
-                      <span className="max-w-[12rem] truncate font-medium">{cfg.name}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Provider is locked for this conversation.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div
+                className="inline-flex h-7 cursor-default select-none items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-2 text-xs text-foreground dark:border-gray-700 dark:bg-gray-700"
+                role="presentation"
+                title={cfg.name}
+              >
+                {cfg.logo ? (
+                  <img
+                    src={cfg.logo}
+                    alt={cfg.name}
+                    title={cfg.name}
+                    className={`h-3.5 w-3.5 flex-shrink-0 rounded-sm object-contain align-middle ${provider === 'codex' || provider === 'auggie' ? 'dark:invert' : ''}`}
+                  />
+                ) : (
+                  <div
+                    className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] bg-gray-300 text-[9px] text-gray-700 dark:bg-gray-600 dark:text-gray-200"
+                    aria-hidden
+                  >
+                    {cfg.name.slice(0, 1)}
+                  </div>
+                )}
+                <span className="max-w-[12rem] truncate font-medium">{cfg.name}</span>
+              </div>
 
               {linearIssue ? (
                 <TooltipProvider delayDuration={250}>
