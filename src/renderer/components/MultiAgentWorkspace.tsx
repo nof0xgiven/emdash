@@ -268,7 +268,7 @@ const MultiAgentWorkspace: React.FC<Props> = ({ workspace }) => {
               <div className="min-h-0 flex-1 px-6 pt-4">
                 <div
                   className={`mx-auto h-full max-w-4xl overflow-hidden rounded-md ${
-                    isDark ? 'bg-gray-800' : 'bg-white'
+                    isDark ? 'bg-zinc-950' : 'bg-white'
                   }`}
                 >
                   <TerminalPane
@@ -289,10 +289,10 @@ const MultiAgentWorkspace: React.FC<Props> = ({ workspace }) => {
 
       <div className="px-6 pb-6 pt-4">
         <div className="mx-auto max-w-4xl">
-          <div className="relative rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <div className="relative rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center gap-2 rounded-md px-4 py-3">
               <Input
-                className="h-9 flex-1 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"
+                className="h-9 flex-1 border-gray-200 bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800"
                 placeholder="Tell the agents what to do..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -308,7 +308,7 @@ const MultiAgentWorkspace: React.FC<Props> = ({ workspace }) => {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 border border-gray-200 bg-gray-100 px-3 text-xs font-medium hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+                className="h-9 border border-gray-200 bg-gray-100 px-3 text-xs font-medium hover:bg-gray-200 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700"
                 onClick={handleRunAll}
                 disabled={!prompt.trim()}
                 title="Run in all panes (Enter)"

@@ -220,8 +220,8 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   );
 
   return (
-    <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-gray-800 ${className}`}>
-      <div className="bg-gray-50 px-3 py-2 dark:bg-gray-900">
+    <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-zinc-950 ${className}`}>
+      <div className="bg-gray-50 px-3 py-2 dark:bg-zinc-900">
         {hasChanges ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -345,8 +345,8 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         {fileChanges.map((change, index) => (
           <div
             key={index}
-            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
-              change.isStaged ? 'bg-gray-50 dark:bg-gray-900/40' : ''
+            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-zinc-800 dark:hover:bg-zinc-900/60 ${
+              change.isStaged ? 'bg-gray-50 dark:bg-zinc-900/60' : ''
             }`}
             onClick={() => {
               setSelectedPath(change.path);
@@ -378,11 +378,11 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
               )}
               <div className="flex items-center gap-1">
                 {!change.isStaged && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
-                    onClick={(e) => handleStageFile(change.path, e)}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-400"
+                  onClick={(e) => handleStageFile(change.path, e)}
                     disabled={stagingFiles.has(change.path)}
                     title="Stage file for commit"
                   >
@@ -396,7 +396,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
+                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
                   title={

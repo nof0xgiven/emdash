@@ -90,7 +90,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   if (!workspace) {
     return (
       <div
-        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 ${className}`}
+        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950 ${className}`}
       >
         <Bot className="mb-2 h-8 w-8 text-gray-400" />
         <h3 className="mb-1 text-sm text-gray-600 dark:text-gray-400">No Workspace Selected</h3>
@@ -102,8 +102,8 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   }
 
   return (
-    <div className={cn('flex h-full flex-col bg-white dark:bg-gray-800', className)}>
-      <div className="flex items-center border-b border-border bg-gray-50 px-2 py-1.5 dark:bg-gray-900">
+    <div className={cn('flex h-full flex-col bg-white dark:bg-zinc-950', className)}>
+      <div className="flex items-center border-b border-border bg-gray-50 px-2 py-1.5 dark:bg-zinc-900">
         <div className="flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto">
           {terminals.map((terminal) => {
             const isActive = terminal.id === activeTerminalId;
@@ -115,8 +115,8 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
                 className={cn(
                   'group flex items-center space-x-1 rounded px-2 py-1 text-xs font-medium transition-colors',
                   isActive
-                    ? 'bg-background text-foreground shadow-sm dark:bg-gray-800 dark:text-gray-50'
-                    : 'text-muted-foreground hover:bg-background/70 dark:hover:bg-gray-800'
+                    ? 'bg-background text-foreground shadow-sm dark:bg-zinc-800 dark:text-gray-50'
+                    : 'text-muted-foreground hover:bg-background/70 dark:hover:bg-zinc-800'
                 )}
                 title={terminal.title}
               >
@@ -142,7 +142,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
         <button
           type={BUTTON_TYPE_BUTTON}
           onClick={() => createTerminal()}
-          className="ml-2 flex h-6 w-6 items-center justify-center rounded border border-transparent text-muted-foreground transition hover:border-border hover:bg-background dark:hover:bg-gray-800"
+          className="ml-2 flex h-6 w-6 items-center justify-center rounded border border-transparent text-muted-foreground transition hover:border-border hover:bg-background dark:hover:bg-zinc-800"
           title={ARIA_LABEL_NEW_TERMINAL}
         >
           <Plus className="h-4 w-4" />
@@ -152,7 +152,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
       <div
         className={cn(
           'bw-terminal relative flex-1 overflow-hidden',
-          effectiveTheme === THEME_DARK ? 'bg-gray-800' : 'bg-white'
+          effectiveTheme === THEME_DARK ? 'bg-zinc-950' : 'bg-white'
         )}
       >
         {terminals.map((terminal) => (

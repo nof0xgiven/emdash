@@ -28,7 +28,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
   if (!selectedRepo) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-gray-900">
+      <div className="flex flex-1 items-center justify-center bg-zinc-950">
         <div className="text-center">
           <div className="mb-8">
             <h1
@@ -45,7 +45,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
 
           <div className="flex justify-center gap-6">
-            <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 transition-colors hover:bg-gray-700">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:bg-zinc-800">
               <div className="mb-3 flex justify-center">
                 <FolderOpen className="h-12 w-12 text-gray-400" />
               </div>
@@ -59,8 +59,8 @@ const MainContent: React.FC<MainContentProps> = ({
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-gray-900">
-      <div className="border-b border-gray-700 bg-gray-800 p-4">
+    <div className="flex flex-1 flex-col bg-zinc-950">
+      <div className="border-b border-zinc-800 bg-zinc-900 p-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white">

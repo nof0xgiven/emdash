@@ -254,7 +254,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="px-6 pb-6 pt-4" onDrop={handleDrop} onDragOver={handleDragOver}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-gray-700 dark:bg-gray-800 ${
+          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-zinc-800 dark:bg-zinc-900 ${
             isFocused ? 'shadow-2xl' : 'shadow-lg'
           }`}
         >
@@ -264,7 +264,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 {imageAttachments.map((rel) => (
                   <div
                     key={rel}
-                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700"
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800"
                   >
                     <span className="max-w-[220px] truncate">{rel}</span>
                     <button
@@ -298,7 +298,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               style={{ minHeight: '56px' }}
             />
             {mentionOpen && mentionResults.length > 0 && (
-              <div className="absolute bottom-40 left-4 z-20 w-[520px] max-w-[calc(100%-2rem)] overflow-hidden rounded-md border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+              <div className="absolute bottom-40 left-4 z-20 w-[520px] max-w-[calc(100%-2rem)] overflow-hidden rounded-md border border-gray-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="max-h-64 overflow-y-auto">
                   {mentionResults.map((item, idx) => (
                     <button
@@ -308,8 +308,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         e.preventDefault();
                         applyMention(item.path);
                       }}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                        idx === mentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                        idx === mentionIndex ? 'bg-gray-100 dark:bg-zinc-800' : ''
                       }`}
                     >
                       <span className="inline-flex h-4 w-4 items-center justify-center text-gray-500">
@@ -349,8 +349,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 disabled={sendDisabled}
                 className={`group relative h-9 w-9 rounded-md p-0 text-gray-600 transition-colors disabled:pointer-events-none disabled:opacity-50 dark:text-gray-300 ${
                   isLoading
-                    ? 'bg-gray-200 hover:bg-red-300 hover:text-white dark:bg-gray-700 dark:hover:text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
+                    ? 'bg-gray-200 hover:bg-red-300 hover:text-white dark:bg-zinc-800 dark:hover:text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700'
                 }`}
                 aria-label={
                   provider === 'droid' ||
