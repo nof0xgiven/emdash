@@ -1,6 +1,36 @@
 import React from 'react';
 import { Run } from '../types';
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_MINUTE = MS_PER_SECOND * SECONDS_PER_MINUTE;
+const COST_DECIMALS = 4;
+
+const RUN_STATUS = {
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled',
+} as const;
+
+const PROVIDER_ID = {
+  CLAUDE: 'claude-code',
+  OPENAI: 'openai-agents',
+} as const;
+
+const PROVIDER_LABEL = {
+  [PROVIDER_ID.CLAUDE]: 'Claude',
+  [PROVIDER_ID.OPENAI]: 'OpenAI',
+} as const;
+
+const STATUS_COLORS = {
+  RUNNING: 'text-white',
+  COMPLETED: 'text-green-400',
+  FAILED: 'text-red-400',
+  CANCELLED: 'text-gray-400',
+  DEFAULT: 'text-yellow-400',
+} as const;
+
 interface RunListProps {
   runs: Run[];
   selectedRun: Run | null;
@@ -12,8 +42,8 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
     const start = new Date(startedAt);
     const end = finishedAt ? new Date(finishedAt) : new Date();
     const diffMs = end.getTime() - start.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+    const diffMins = Math.floor(diffMs / MS_PER_MINUTE);
+    const diffSecs = Math.floor((diffMs % MS_PER_MINUTE) / MS_PER_SECOND);
 
     if (diffMins > 0) {
       return `${diffMins}m ${diffSecs}s`;
@@ -21,30 +51,30 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
     return `${diffSecs}s`;
   };
 
-  const getStatusColor = (status: Run['status']) => {
-    switch (status) {
-      case 'running':
-        return 'text-blue-400';
-      case 'completed':
-        return 'text-green-400';
-      case 'failed':
-        return 'text-red-400';
-      case 'cancelled':
-        return 'text-gray-400';
+  const getStatusColor = (runStatus: Run['status']) => {
+    switch (runStatus) {
+      case RUN_STATUS.RUNNING:
+        return STATUS_COLORS.RUNNING;
+      case RUN_STATUS.COMPLETED:
+        return STATUS_COLORS.COMPLETED;
+      case RUN_STATUS.FAILED:
+        return STATUS_COLORS.FAILED;
+      case RUN_STATUS.CANCELLED:
+        return STATUS_COLORS.CANCELLED;
       default:
-        return 'text-yellow-400';
+        return STATUS_COLORS.DEFAULT;
     }
   };
 
-  const getStatusIcon = (status: Run['status']) => {
-    switch (status) {
-      case 'running':
+  const getStatusIcon = (runStatus: Run['status']) => {
+    switch (runStatus) {
+      case RUN_STATUS.RUNNING:
         return '🔄';
-      case 'completed':
+      case RUN_STATUS.COMPLETED:
         return '✅';
-      case 'failed':
+      case RUN_STATUS.FAILED:
         return '❌';
-      case 'cancelled':
+      case RUN_STATUS.CANCELLED:
         return '⏹️';
       default:
         return '⏳';
@@ -67,7 +97,7 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
                 key={run.id}
                 className={`cursor-pointer rounded-lg border p-4 transition-colors ${
                   selectedRun?.id === run.id
-                    ? 'border-blue-500 bg-blue-600'
+                    ? 'border-white bg-gray-700'
                     : 'border-gray-700 bg-gray-800 hover:bg-gray-700'
                 }`}
                 onClick={() => onRunSelect(run)}
@@ -83,7 +113,7 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
                     </span>
                   </div>
                   <div className="text-sm text-gray-400">
-                    {run.provider === 'claude-code' ? 'Claude' : 'OpenAI'}
+                    {PROVIDER_LABEL[run.provider] || run.provider}
                   </div>
                 </div>
 
@@ -96,7 +126,7 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
                 {run.tokenUsage > 0 && (
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                     <span>Tokens: {run.tokenUsage.toLocaleString()}</span>
-                    {run.cost > 0 && <span>Cost: ${run.cost.toFixed(4)}</span>}
+                    {run.cost > 0 && <span>Cost: ${run.cost.toFixed(COST_DECIMALS)}</span>}
                   </div>
                 )}
               </div>

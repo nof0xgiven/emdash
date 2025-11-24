@@ -8,6 +8,48 @@ import { useToast } from '../hooks/use-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getLanguageFromPath } from '../lib/languageUtils';
+import {
+  COLORS,
+  DIFF_CHUNK_SIZE_KB,
+  BYTES_PER_KB,
+  MODAL_ANIM_DURATION_OUT,
+  MODAL_ANIM_DURATION_IN,
+  MODAL_INIT_Y,
+  MODAL_EXIT_Y,
+  MODAL_SCALE,
+  DIFF_TYPE_ADD,
+  DIFF_TYPE_DEL,
+  DIFF_TYPE_CONTEXT,
+  DIFF_TYPE_DIFF,
+  CSS_DIFF_ADD,
+  CSS_DIFF_DEL,
+  CSS_DIFF_TRANSPARENT,
+  EVENT_CHANGE,
+  EVENT_SCROLL,
+  TAG_DIV,
+  TAG_CODE,
+  TAG_STYLE,
+  MSG_FILE_READ_FAIL,
+  MSG_FILE_TOO_LARGE,
+  MSG_INLINE_EDIT_LIMIT,
+  MSG_CANNOT_EDIT,
+  MSG_DISCARD_CHANGES,
+  MSG_DISCARD_EDIT_EXIT,
+  MSG_SAVE_FAILED,
+  MSG_UNABLE_TO_SAVE,
+  MSG_SAVED,
+  TITLE_EDIT,
+  TITLE_SAVE,
+  TITLE_DISCARD,
+  ARIA_DIALOG,
+  ARIA_COLLAPSE,
+  ARIA_EXPAND,
+  KEY_ESCAPE,
+  KEY_S,
+  COLOR_CARET_DARK,
+  THEME_DARK,
+  TYPE_STRING,
+} from '../lib/constants';
 
 interface ChangesDiffModalProps {
   open: boolean;

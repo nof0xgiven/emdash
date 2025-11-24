@@ -4,13 +4,21 @@ import { Bot, Terminal, Plus, X } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useWorkspaceTerminals } from '@/lib/workspaceTerminalsStore';
 import { cn } from '@/lib/utils';
+import {
+  COLORS,
+  THEME_DARK,
+  THEME_LIGHT,
+  WORKSPACE_STATUS,
+  BUTTON_TYPE_BUTTON,
+  ARIA_LABEL_NEW_TERMINAL,
+} from '../lib/constants';
 
 interface Workspace {
   id: string;
   name: string;
   branch: string;
   path: string;
-  status: 'active' | 'idle' | 'running';
+  status: (typeof WORKSPACE_STATUS)[keyof typeof WORKSPACE_STATUS];
 }
 
 interface Props {
@@ -31,35 +39,35 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
 
   const themeOverride = useMemo(
     () =>
-      effectiveTheme === 'dark'
+      effectiveTheme === THEME_DARK
         ? {
-            background: '#1f2937',
-            foreground: '#ffffff',
-            cursor: '#ffffff',
-            selectionBackground: '#ffffff33',
-            black: '#1f2937',
-            red: '#ffffff',
-            green: '#ffffff',
-            yellow: '#ffffff',
-            blue: '#ffffff',
-            magenta: '#ffffff',
-            cyan: '#ffffff',
-            white: '#ffffff',
-            brightBlack: '#ffffff',
-            brightRed: '#ffffff',
-            brightGreen: '#ffffff',
-            brightYellow: '#ffffff',
-            brightBlue: '#ffffff',
-            brightMagenta: '#ffffff',
-            brightCyan: '#ffffff',
-            brightWhite: '#ffffff',
+            background: COLORS.ZINC_950,
+            foreground: COLORS.WHITE,
+            cursor: COLORS.WHITE,
+            selectionBackground: `${COLORS.WHITE}33`,
+            black: COLORS.ZINC_950,
+            red: COLORS.WHITE,
+            green: COLORS.WHITE,
+            yellow: COLORS.WHITE,
+            blue: COLORS.WHITE,
+            magenta: COLORS.WHITE,
+            cyan: COLORS.WHITE,
+            white: COLORS.WHITE,
+            brightBlack: COLORS.WHITE,
+            brightRed: COLORS.WHITE,
+            brightGreen: COLORS.WHITE,
+            brightYellow: COLORS.WHITE,
+            brightBlue: COLORS.WHITE,
+            brightMagenta: COLORS.WHITE,
+            brightCyan: COLORS.WHITE,
+            brightWhite: COLORS.WHITE,
           }
         : {
-            background: '#ffffff',
+            background: COLORS.WHITE,
             foreground: '#000000',
             cursor: '#000000',
             selectionBackground: '#00000033',
-            black: '#ffffff',
+            black: COLORS.WHITE,
             red: '#000000',
             green: '#000000',
             yellow: '#000000',
@@ -82,7 +90,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   if (!workspace) {
     return (
       <div
-        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 ${className}`}
+        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950 ${className}`}
       >
         <Bot className="mb-2 h-8 w-8 text-gray-400" />
         <h3 className="mb-1 text-sm text-gray-600 dark:text-gray-400">No Workspace Selected</h3>
@@ -94,21 +102,21 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   }
 
   return (
-    <div className={cn('flex h-full flex-col bg-white dark:bg-gray-800', className)}>
-      <div className="flex items-center border-b border-border bg-gray-50 px-2 py-1.5 dark:bg-gray-900">
+    <div className={cn('flex h-full flex-col bg-white dark:bg-zinc-950', className)}>
+      <div className="flex items-center border-b border-border bg-gray-50 px-2 py-1.5 dark:bg-zinc-900">
         <div className="flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto">
           {terminals.map((terminal) => {
             const isActive = terminal.id === activeTerminalId;
             return (
               <button
                 key={terminal.id}
-                type="button"
+                type={BUTTON_TYPE_BUTTON}
                 onClick={() => setActiveTerminal(terminal.id)}
                 className={cn(
                   'group flex items-center space-x-1 rounded px-2 py-1 text-xs font-medium transition-colors',
                   isActive
-                    ? 'bg-background text-foreground shadow-sm dark:bg-gray-800 dark:text-gray-50'
-                    : 'text-muted-foreground hover:bg-background/70 dark:hover:bg-gray-800'
+                    ? 'bg-background text-foreground shadow-sm dark:bg-zinc-800 dark:text-gray-50'
+                    : 'text-muted-foreground hover:bg-background/70 dark:hover:bg-zinc-800'
                 )}
                 title={terminal.title}
               >
@@ -116,7 +124,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
                 <span className="max-w-[130px] truncate">{terminal.title}</span>
                 {terminals.length > 1 ? (
                   <span
-                    role="button"
+                    role={BUTTON_TYPE_BUTTON}
                     tabIndex={-1}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -132,10 +140,10 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
           })}
         </div>
         <button
-          type="button"
+          type={BUTTON_TYPE_BUTTON}
           onClick={() => createTerminal()}
-          className="ml-2 flex h-6 w-6 items-center justify-center rounded border border-transparent text-muted-foreground transition hover:border-border hover:bg-background dark:hover:bg-gray-800"
-          title="New terminal"
+          className="ml-2 flex h-6 w-6 items-center justify-center rounded border border-transparent text-muted-foreground transition hover:border-border hover:bg-background dark:hover:bg-zinc-800"
+          title={ARIA_LABEL_NEW_TERMINAL}
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -144,7 +152,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
       <div
         className={cn(
           'bw-terminal relative flex-1 overflow-hidden',
-          effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'
+          effectiveTheme === THEME_DARK ? 'bg-zinc-950' : 'bg-white'
         )}
       >
         {terminals.map((terminal) => (
@@ -158,7 +166,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
             <TerminalPane
               id={terminal.id}
               cwd={terminal.cwd || workspace.path}
-              variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+              variant={effectiveTheme === THEME_DARK ? THEME_DARK : THEME_LIGHT}
               themeOverride={themeOverride}
               className="h-full w-full"
               keepAlive

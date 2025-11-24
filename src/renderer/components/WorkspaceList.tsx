@@ -4,12 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Spinner } from './ui/spinner';
 import { GitBranch, Bot, Play, Pause, Plus } from 'lucide-react';
 
+const WORKSPACE_STATUS = {
+  ACTIVE: 'active',
+  IDLE: 'idle',
+  RUNNING: 'running',
+} as const;
+
+type WorkspaceStatus = (typeof WORKSPACE_STATUS)[keyof typeof WORKSPACE_STATUS];
+
 interface Workspace {
   id: string;
   name: string;
   branch: string;
   path: string;
-  status: 'active' | 'idle' | 'running';
+  status: WorkspaceStatus;
 }
 
 interface Props {
@@ -29,12 +37,12 @@ export const WorkspaceList: React.FC<Props> = ({
 }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'running':
+      case WORKSPACE_STATUS.RUNNING:
         return <Play className="h-4 w-4 text-green-500" />;
-      case 'idle':
+      case WORKSPACE_STATUS.IDLE:
         return <Pause className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Bot className="h-4 w-4 text-blue-500" />;
+        return <Bot className="h-4 w-4 text-gray-100" />;
     }
   };
 
@@ -73,7 +81,7 @@ export const WorkspaceList: React.FC<Props> = ({
               key={workspace.id}
               className={`cursor-pointer transition-all duration-200 ${
                 activeWorkspace?.id === workspace.id
-                  ? 'border-blue-500 ring-2 ring-blue-500'
+                  ? 'border-white ring-2 ring-gray-400'
                   : 'border-gray-200 hover:border-gray-400 dark:border-gray-700 dark:hover:border-gray-500'
               }`}
               onClick={() => onSelectWorkspace(workspace)}

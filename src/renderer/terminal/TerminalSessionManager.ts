@@ -247,7 +247,7 @@ export class TerminalSessionManager {
             cursor: '#1f2933',
           }
         : {
-            background: '#1f2937',
+            background: '#09090b',
             foreground: '#f9fafb',
             cursor: '#f9fafb',
           };

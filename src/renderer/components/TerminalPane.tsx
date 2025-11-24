@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { terminalSessionRegistry } from '../terminal/SessionRegistry';
-import type { SessionTheme } from '../terminal/TerminalSessionManager';
+import { TerminalSessionManager, type SessionTheme } from '../terminal/TerminalSessionManager';
 import { log } from '../lib/logger';
+import {
+  DEFAULT_TERMINAL_COLS,
+  DEFAULT_TERMINAL_ROWS,
+  THEME_DARK,
+  THEME_LIGHT,
+  TERMINAL_BG_DARK,
+  TERMINAL_BG_LIGHT,
+  MSG_TERMINAL_DROP_FAILED,
+  CSS_TERMINAL_PANE,
+} from '../lib/constants';
 
 type Props = {
   id: string;
@@ -11,7 +21,7 @@ type Props = {
   shell?: string;
   env?: Record<string, string>;
   className?: string;
-  variant?: 'dark' | 'light';
+  variant?: typeof THEME_DARK | typeof THEME_LIGHT;
   themeOverride?: any;
   contentFilter?: string;
   keepAlive?: boolean;
@@ -25,12 +35,12 @@ type Props = {
 const TerminalPaneComponent: React.FC<Props> = ({
   id,
   cwd,
-  cols = 120,
-  rows = 32,
+  cols = DEFAULT_TERMINAL_COLS,
+  rows = DEFAULT_TERMINAL_ROWS,
   shell,
   env,
   className,
-  variant = 'dark',
+  variant = THEME_DARK,
   themeOverride,
   contentFilter,
   keepAlive = true,
@@ -41,7 +51,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
   onExit,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const sessionRef = useRef<ReturnType<(typeof terminalSessionRegistry)['attach']> | null>(null);
+  const sessionRef = useRef<TerminalSessionManager | null>(null);
   const activityCleanupRef = useRef<(() => void) | null>(null);
   const readyCleanupRef = useRef<(() => void) | null>(null);
   const errorCleanupRef = useRef<(() => void) | null>(null);
@@ -143,18 +153,18 @@ const TerminalPaneComponent: React.FC<Props> = ({
       window.electronAPI.ptyInput({ id, data: `${escaped} ` });
       sessionRef.current?.focus();
     } catch (error) {
-      log.warn('Terminal drop failed', { error });
+      log.warn(MSG_TERMINAL_DROP_FAILED, { error });
     }
   };
 
   return (
     <div
-      className={['terminal-pane flex h-full w-full', className].filter(Boolean).join(' ')}
+      className={[CSS_TERMINAL_PANE, className].filter(Boolean).join(' ')}
       style={{
         width: '100%',
         height: '100%',
         minHeight: 0,
-        backgroundColor: variant === 'light' ? '#ffffff' : '#1f2937',
+        backgroundColor: variant === THEME_LIGHT ? TERMINAL_BG_LIGHT : TERMINAL_BG_DARK,
         boxSizing: 'border-box',
       }}
     >

@@ -28,7 +28,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
   if (!selectedRepo) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-gray-900">
+      <div className="flex flex-1 items-center justify-center bg-zinc-950">
         <div className="text-center">
           <div className="mb-8">
             <h1
@@ -45,9 +45,9 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
 
           <div className="flex justify-center gap-6">
-            <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 transition-colors hover:bg-gray-700">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:bg-zinc-800">
               <div className="mb-3 flex justify-center">
-                <FolderOpen className="h-12 w-12 text-blue-400" />
+                <FolderOpen className="h-12 w-12 text-gray-400" />
               </div>
               <h3 className="mb-2 text-lg font-semibold text-white">Open Project</h3>
               <p className="text-sm text-gray-400">Select a repository to get started</p>
@@ -59,8 +59,8 @@ const MainContent: React.FC<MainContentProps> = ({
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-gray-900">
-      <div className="border-b border-gray-700 bg-gray-800 p-4">
+    <div className="flex flex-1 flex-col bg-zinc-950">
+      <div className="border-b border-zinc-800 bg-zinc-900 p-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white">
@@ -70,7 +70,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
           <div className="flex gap-2">
             <button
-              className="rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+              className="rounded bg-white px-4 py-2 text-black transition-colors hover:bg-gray-200"
               onClick={() => setShowRunLauncher(true)}
             >
               Start Run
@@ -90,7 +90,7 @@ const MainContent: React.FC<MainContentProps> = ({
               <h3 className="mb-2 text-xl font-semibold text-white">No runs yet</h3>
               <p className="mb-4 text-gray-400">Start your first coding agent run</p>
               <button
-                className="rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700"
+                className="rounded-lg bg-white px-6 py-3 text-black transition-colors hover:bg-gray-200"
                 onClick={() => setShowRunLauncher(true)}
               >
                 Create Run
