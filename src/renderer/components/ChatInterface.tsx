@@ -661,7 +661,7 @@ const ChatInterface: React.FC<Props> = ({
   }
 
   return (
-    <div className={`flex h-full flex-col bg-white dark:bg-gray-800 ${className}`}>
+    <div className={`flex h-full flex-col bg-white dark:bg-zinc-950 ${className}`}>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="px-6 pt-4">
           <div className="mx-auto max-w-4xl space-y-3">
@@ -679,8 +679,8 @@ const ChatInterface: React.FC<Props> = ({
                       className={cn(
                         'group flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium transition-colors',
                         isActive
-                          ? 'bg-background text-foreground shadow-sm dark:bg-gray-800'
-                          : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-gray-800/80'
+                          ? 'bg-background text-foreground shadow-sm dark:bg-zinc-800'
+                          : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-zinc-800/80'
                       )}
                     >
                       {asset?.logo ? (
@@ -785,7 +785,7 @@ const ChatInterface: React.FC<Props> = ({
           <div
             className={cn(
               'relative mx-auto h-full max-w-4xl overflow-hidden rounded-md',
-              provider === 'charm' ? (effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white') : ''
+              provider === 'charm' ? (effectiveTheme === 'dark' ? 'bg-zinc-950' : 'bg-white') : ''
             )}
           >
             {providerTabs.map((tab) => {
@@ -826,7 +826,7 @@ const ChatInterface: React.FC<Props> = ({
                     variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
                     themeOverride={
                       tab.provider === 'charm'
-                        ? { background: effectiveTheme === 'dark' ? '#1f2937' : '#ffffff' }
+                        ? { background: effectiveTheme === 'dark' ? '#09090b' : '#ffffff' }
                         : undefined
                     }
                     contentFilter={
