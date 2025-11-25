@@ -7,6 +7,7 @@ import {
   loadWorkspaceContainerConfig,
   saveWorkspaceContainerConfig,
 } from '../services/containerConfigService';
+import { runSetupScript } from '../services/setupScriptService';
 import type { ContainerConfigFile, ResolvedContainerConfig } from '@shared/container';
 import {
   containerRunnerService,
@@ -152,6 +153,37 @@ export function registerContainerIpc(): void {
             configPath: null,
             configKey: null,
           },
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'container:run-setup',
+    async (
+      _event,
+      args: { workspacePath?: string; command?: string; timeoutMs?: number }
+    ): Promise<{ ok: boolean; error?: string; exitCode?: number; output?: string }> => {
+      const workspacePath = resolveWorkspacePath(args?.workspacePath);
+      if (!workspacePath) {
+        return { ok: false, error: '`workspacePath` must be a non-empty string' };
+      }
+
+      const command = typeof args?.command === 'string' ? args.command.trim() : '';
+      if (!command) {
+        return { ok: false, error: '`command` must be a non-empty string' };
+      }
+
+      try {
+        const result = await runSetupScript(workspacePath, command, {
+          timeoutMs: args?.timeoutMs,
+        });
+        return result;
+      } catch (error) {
+        log.error('container:run-setup unexpected failure', error);
+        return {
+          ok: false,
+          error: 'Failed to run setup command',
         };
       }
     }

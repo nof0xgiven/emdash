@@ -220,8 +220,8 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   );
 
   return (
-    <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-zinc-950 ${className}`}>
-      <div className="bg-gray-50 px-3 py-2 dark:bg-zinc-900">
+    <div className={`flex h-full flex-col ${className}`}>
+      <div className="border-b border-t border-gray-200 bg-gray-50 px-3 py-2 dark:border-zinc-900 dark:bg-zinc-950">
         {hasChanges ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -341,7 +341,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-zinc-950">
         {fileChanges.map((change, index) => (
           <div
             key={index}

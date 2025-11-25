@@ -294,6 +294,16 @@ declare global {
             };
           }
       >;
+      runSetupScript: (args: {
+        workspacePath: string;
+        command: string;
+        timeoutMs?: number;
+      }) => Promise<{
+        ok: boolean;
+        exitCode?: number;
+        error?: string;
+        output?: string;
+      }>;
       startContainerRun: (args: {
         workspaceId: string;
         workspacePath: string;

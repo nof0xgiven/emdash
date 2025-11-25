@@ -124,6 +124,17 @@ export const BrowserProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setWidthPctState(clamped);
   }, []);
 
+  // Listen for browser:navigate events from other components (e.g., terminal panel)
+  React.useEffect(() => {
+    const handleNavigate = (e: CustomEvent<{ url: string }>) => {
+      if (e.detail?.url) {
+        open(e.detail.url);
+      }
+    };
+    window.addEventListener('browser:navigate', handleNavigate as EventListener);
+    return () => window.removeEventListener('browser:navigate', handleNavigate as EventListener);
+  }, [open]);
+
   const value = React.useMemo<BrowserController>(
     () => ({
       isOpen,

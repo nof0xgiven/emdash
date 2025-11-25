@@ -109,13 +109,13 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 
     const baseClasses =
       variant === 'default'
-        ? 'group/sidebar relative z-50 flex h-full flex-col border-r border-border bg-muted/10 text-sm text-foreground transition-all duration-200 ease-linear overflow-hidden flex-shrink-0 data-[state=collapsed]:border-r-0 data-[state=collapsed]:pointer-events-none'
+        ? 'group/sidebar relative z-50 flex h-full flex-col bg-white/80 backdrop-blur-xl text-sm text-foreground transition-all duration-200 ease-linear overflow-hidden flex-shrink-0 data-[state=collapsed]:pointer-events-none dark:bg-black/80'
         : '';
     const responsiveClasses =
       variant === 'default'
         ? isMobile
           ? cn(
-              'fixed inset-y-0 left-0 w-[var(--sidebar-width-mobile,18rem)] bg-background shadow-lg',
+              'fixed inset-y-0 left-0 w-[var(--sidebar-width-mobile,18rem)] bg-white/80 backdrop-blur-xl shadow-lg dark:bg-black/80',
               open ? 'translate-x-0' : '-translate-x-full'
             )
           : cn(open ? 'w-full' : 'w-0')

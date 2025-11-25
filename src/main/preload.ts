@@ -153,6 +153,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('container:load-config', { workspacePath }),
   saveContainerConfig: (args: { workspacePath: string; config: { setup?: string; start?: string } }) =>
     ipcRenderer.invoke('container:save-config', args),
+  runSetupScript: (args: { workspacePath: string; command: string; timeoutMs?: number }) =>
+    ipcRenderer.invoke('container:run-setup', args),
   startContainerRun: (args: {
     workspaceId: string;
     workspacePath: string;
