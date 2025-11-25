@@ -86,7 +86,7 @@ const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v2';
 const DEFAULT_PANEL_LAYOUT: [number, number, number] = [20, 60, 20];
 const LEFT_SIDEBAR_MIN_SIZE = 16;
 const LEFT_SIDEBAR_MAX_SIZE = 30;
-const RIGHT_SIDEBAR_MIN_SIZE = 16;
+const RIGHT_SIDEBAR_MIN_SIZE = 20;
 const RIGHT_SIDEBAR_MAX_SIZE = 30;
 const clampLeftSidebarSize = (value: number) =>
   Math.min(
@@ -742,6 +742,38 @@ const AppContent: React.FC = () => {
           });
         }
 
+        // Check for and run setup script if configured (run once for first variant)
+        if (variants.length > 0) {
+          try {
+            const configResult = await window.electronAPI.loadContainerConfig(variants[0].path);
+            if (configResult.ok && configResult.config?.setup) {
+              toast({
+                title: 'Running setup',
+                description: `Executing: ${configResult.config.setup}`,
+              });
+              const setupResult = await window.electronAPI.runSetupScript({
+                workspacePath: variants[0].path,
+                command: configResult.config.setup,
+              });
+              if (!setupResult.ok) {
+                toast({
+                  title: 'Setup failed',
+                  description: setupResult.error || 'Setup script failed',
+                  variant: 'destructive',
+                });
+              } else {
+                toast({
+                  title: 'Setup complete',
+                  description: 'Setup script finished successfully',
+                });
+              }
+            }
+          } catch (setupError) {
+            const { log } = await import('./lib/logger');
+            log.warn('Failed to check/run setup script:', setupError as Error);
+          }
+        }
+
         const multiMeta: WorkspaceMetadata = {
           ...(workspaceMetadata || {}),
           multiAgent: {
@@ -791,6 +823,36 @@ const AppContent: React.FC = () => {
         }
 
         const worktree = worktreeResult.worktree;
+
+        // Check for and run setup script if configured
+        try {
+          const configResult = await window.electronAPI.loadContainerConfig(worktree.path);
+          if (configResult.ok && configResult.config?.setup) {
+            toast({
+              title: 'Running setup',
+              description: `Executing: ${configResult.config.setup}`,
+            });
+            const setupResult = await window.electronAPI.runSetupScript({
+              workspacePath: worktree.path,
+              command: configResult.config.setup,
+            });
+            if (!setupResult.ok) {
+              toast({
+                title: 'Setup failed',
+                description: setupResult.error || 'Setup script failed',
+                variant: 'destructive',
+              });
+            } else {
+              toast({
+                title: 'Setup complete',
+                description: 'Setup script finished successfully',
+              });
+            }
+          }
+        } catch (setupError) {
+          const { log } = await import('./lib/logger');
+          log.warn('Failed to check/run setup script:', setupError as Error);
+        }
 
         newWorkspace = {
           id: worktree.id,
@@ -1331,7 +1393,7 @@ const AppContent: React.FC = () => {
   return (
     <BrowserProvider>
       <div
-        className="flex h-[100dvh] w-full flex-col bg-background text-foreground"
+        className="flex h-[100dvh] w-full flex-col text-foreground"
         style={{ '--tb': TITLEBAR_HEIGHT } as React.CSSProperties}
       >
         {/** Kanban view state **/}
@@ -1375,7 +1437,7 @@ const AppContent: React.FC = () => {
               isKanbanOpen={Boolean(showKanban)}
               kanbanAvailable={Boolean(selectedProject)}
             />
-            <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
+            <div className="flex flex-1 overflow-hidden">
               <ResizablePanelGroup
                 direction="horizontal"
                 className="flex-1 overflow-hidden"
@@ -1414,7 +1476,7 @@ const AppContent: React.FC = () => {
                 </ResizablePanel>
                 <ResizableHandle
                   withHandle
-                  className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
+                  className="hidden cursor-col-resize items-center justify-center bg-gray-200 transition-colors hover:bg-gray-300 dark:bg-zinc-900 dark:hover:bg-zinc-800 lg:flex"
                 />
                 <ResizablePanel
                   className="sidebar-panel sidebar-panel--main"
@@ -1422,13 +1484,13 @@ const AppContent: React.FC = () => {
                   minSize={MAIN_PANEL_MIN_SIZE}
                   order={2}
                 >
-                  <div className="flex h-full flex-col overflow-hidden bg-background text-foreground">
+                  <div className="flex h-full flex-col overflow-hidden bg-background pt-[var(--tb)] text-foreground dark:bg-zinc-950">
                     {renderMainContent()}
                   </div>
                 </ResizablePanel>
                 <ResizableHandle
                   withHandle
-                  className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
+                  className="hidden cursor-col-resize items-center justify-center bg-gray-200 transition-colors hover:bg-gray-300 dark:bg-zinc-900 dark:hover:bg-zinc-800 lg:flex"
                 />
                 <ResizablePanel
                   ref={rightSidebarPanelRef}

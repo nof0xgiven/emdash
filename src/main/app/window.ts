@@ -6,6 +6,8 @@ import { registerExternalLinkHandlers } from '../utils/externalLinks';
 let mainWindow: BrowserWindow | null = null;
 
 export function createMainWindow(): BrowserWindow {
+  const isMac = process.platform === 'darwin';
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -23,10 +25,17 @@ export function createMainWindow(): BrowserWindow {
     },
     titleBarStyle: 'hiddenInset',
     show: false,
+    // macOS vibrancy support for frosted glass effect
+    ...(isMac && {
+      transparent: true,
+      vibrancy: 'hud',
+      visualEffectState: 'active',
+      backgroundColor: '#00000000',
+    }),
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:3003');
   } else {
     // In production, compiled main files are under dist/main/main/**
     // Renderer build outputs to dist/renderer/index.html (sibling of dist/main)

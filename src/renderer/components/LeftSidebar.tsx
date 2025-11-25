@@ -131,7 +131,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   return (
     <div className="relative h-full">
       <Sidebar className="lg:border-r-0">
-        <SidebarContent>
+        <SidebarContent className="pt-[calc(var(--tb)+10px)]">
           <SidebarGroup className="mb-2">
             <SidebarGroupContent>
               <SidebarMenu>
@@ -327,7 +327,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-1 w-full justify-start"
+                        className="mt-1 w-full justify-start border-0"
                         onClick={onOpenProject}
                       >
                         <FolderOpen className="mr-2 h-4 w-4" />

@@ -5,8 +5,10 @@ import {
   ContainerConfigLoadError,
   ContainerConfigLoadErrorCode,
   loadWorkspaceContainerConfig,
+  saveWorkspaceContainerConfig,
 } from '../services/containerConfigService';
-import type { ResolvedContainerConfig } from '@shared/container';
+import { runSetupScript } from '../services/setupScriptService';
+import type { ContainerConfigFile, ResolvedContainerConfig } from '@shared/container';
 import {
   containerRunnerService,
   type ContainerStartError,
@@ -99,6 +101,89 @@ export function registerContainerIpc(): void {
             configPath: null,
             configKey: null,
           },
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'container:save-config',
+    async (
+      _event,
+      args: { workspacePath?: string; config?: ContainerConfigFile }
+    ): Promise<{ ok: boolean; error?: SerializedContainerConfigError }> => {
+      const workspacePath = resolveWorkspacePath(args?.workspacePath);
+      if (!workspacePath) {
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_ARGUMENT',
+            message: '`workspacePath` must be a non-empty string',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+
+      if (!args?.config || typeof args.config !== 'object') {
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_ARGUMENT',
+            message: '`config` must be an object',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+
+      try {
+        const result = await saveWorkspaceContainerConfig(workspacePath, args.config);
+        if (result.ok) {
+          return { ok: true };
+        }
+        return { ok: false, error: serializeError(result.error) };
+      } catch (error) {
+        log.error('container:save-config unexpected failure', error);
+        return {
+          ok: false,
+          error: {
+            code: 'UNKNOWN',
+            message: 'Failed to save container configuration',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'container:run-setup',
+    async (
+      _event,
+      args: { workspacePath?: string; command?: string; timeoutMs?: number }
+    ): Promise<{ ok: boolean; error?: string; exitCode?: number; output?: string }> => {
+      const workspacePath = resolveWorkspacePath(args?.workspacePath);
+      if (!workspacePath) {
+        return { ok: false, error: '`workspacePath` must be a non-empty string' };
+      }
+
+      const command = typeof args?.command === 'string' ? args.command.trim() : '';
+      if (!command) {
+        return { ok: false, error: '`command` must be a non-empty string' };
+      }
+
+      try {
+        const result = await runSetupScript(workspacePath, command, {
+          timeoutMs: args?.timeoutMs,
+        });
+        return result;
+      } catch (error) {
+        log.error('container:run-setup unexpected failure', error);
+        return {
+          ok: false,
+          error: 'Failed to run setup command',
         };
       }
     }

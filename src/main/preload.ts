@@ -151,6 +151,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('git:list-remote-branches', args),
   loadContainerConfig: (workspacePath: string) =>
     ipcRenderer.invoke('container:load-config', { workspacePath }),
+  saveContainerConfig: (args: { workspacePath: string; config: { setup?: string; start?: string } }) =>
+    ipcRenderer.invoke('container:save-config', args),
+  runSetupScript: (args: { workspacePath: string; command: string; timeoutMs?: number }) =>
+    ipcRenderer.invoke('container:run-setup', args),
   startContainerRun: (args: {
     workspaceId: string;
     workspacePath: string;
@@ -488,6 +492,26 @@ export interface ElectronAPI {
             | 'IO_ERROR'
             | 'UNKNOWN'
             | 'PORT_ALLOC_FAILED';
+          message: string;
+          configPath: string | null;
+          configKey: string | null;
+        };
+      }
+  >;
+  saveContainerConfig: (args: {
+    workspacePath: string;
+    config: { setup?: string; start?: string };
+  }) => Promise<
+    | { ok: true }
+    | {
+        ok: false;
+        error: {
+          code:
+            | 'INVALID_ARGUMENT'
+            | 'INVALID_JSON'
+            | 'VALIDATION_FAILED'
+            | 'IO_ERROR'
+            | 'UNKNOWN';
           message: string;
           configPath: string | null;
           configKey: string | null;

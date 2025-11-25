@@ -16,6 +16,7 @@ export interface ContainerPortConfig {
 export interface ContainerConfigFile {
   version?: number;
   packageManager?: PackageManager;
+  setup?: string;
   start?: string;
   envFile?: string;
   workdir?: string;
@@ -32,6 +33,7 @@ export interface ResolvedContainerPortConfig {
 export interface ResolvedContainerConfig {
   version: 1;
   packageManager: PackageManager;
+  setup?: string;
   start: string;
   envFile?: string;
   workdir: string;
@@ -79,6 +81,7 @@ export function resolveContainerConfig(
     source.packageManager,
     options.inferredPackageManager
   );
+  const setup = resolveSetupCommand(source.setup);
   const start = resolveStartCommand(source.start);
   const envFile = resolveEnvFile(source.envFile);
   const workdir = resolveWorkdir(source.workdir);
@@ -87,6 +90,7 @@ export function resolveContainerConfig(
   return {
     version,
     packageManager,
+    setup,
     start,
     envFile,
     workdir,
@@ -131,6 +135,18 @@ function resolveStartCommand(raw: unknown): string {
   const normalized = raw.trim();
   if (normalized.length === 0) {
     throw new ContainerConfigError('`start` cannot be empty', 'start');
+  }
+  return normalized;
+}
+
+function resolveSetupCommand(raw: unknown): string | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw !== 'string') {
+    throw new ContainerConfigError('`setup` must be a string', 'setup');
+  }
+  const normalized = raw.trim();
+  if (normalized.length === 0) {
+    return undefined;
   }
   return normalized;
 }
@@ -256,6 +272,7 @@ export type ContainerConfigSchema = {
       readonly type: 'string';
       readonly enum: readonly ['npm', 'pnpm', 'yarn'];
     };
+    readonly setup: { readonly type: 'string'; readonly minLength: 1 };
     readonly start: { readonly type: 'string'; readonly minLength: 1 };
     readonly envFile: { readonly type: 'string'; readonly minLength: 1 };
     readonly workdir: { readonly type: 'string'; readonly minLength: 1 };
@@ -288,6 +305,7 @@ export const CONTAINER_CONFIG_JSON_SCHEMA: ContainerConfigSchema = {
   properties: {
     version: { type: 'integer', enum: [1] as const },
     packageManager: { type: 'string', enum: ['npm', 'pnpm', 'yarn'] as const },
+    setup: { type: 'string', minLength: 1 },
     start: { type: 'string', minLength: 1 },
     envFile: { type: 'string', minLength: 1 },
     workdir: { type: 'string', minLength: 1 },
