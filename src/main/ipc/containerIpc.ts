@@ -5,8 +5,9 @@ import {
   ContainerConfigLoadError,
   ContainerConfigLoadErrorCode,
   loadWorkspaceContainerConfig,
+  saveWorkspaceContainerConfig,
 } from '../services/containerConfigService';
-import type { ResolvedContainerConfig } from '@shared/container';
+import type { ContainerConfigFile, ResolvedContainerConfig } from '@shared/container';
 import {
   containerRunnerService,
   type ContainerStartError,
@@ -96,6 +97,58 @@ export function registerContainerIpc(): void {
           error: {
             code: 'UNKNOWN',
             message: 'Failed to load container configuration',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'container:save-config',
+    async (
+      _event,
+      args: { workspacePath?: string; config?: ContainerConfigFile }
+    ): Promise<{ ok: boolean; error?: SerializedContainerConfigError }> => {
+      const workspacePath = resolveWorkspacePath(args?.workspacePath);
+      if (!workspacePath) {
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_ARGUMENT',
+            message: '`workspacePath` must be a non-empty string',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+
+      if (!args?.config || typeof args.config !== 'object') {
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_ARGUMENT',
+            message: '`config` must be an object',
+            configPath: null,
+            configKey: null,
+          },
+        };
+      }
+
+      try {
+        const result = await saveWorkspaceContainerConfig(workspacePath, args.config);
+        if (result.ok) {
+          return { ok: true };
+        }
+        return { ok: false, error: serializeError(result.error) };
+      } catch (error) {
+        log.error('container:save-config unexpected failure', error);
+        return {
+          ok: false,
+          error: {
+            code: 'UNKNOWN',
+            message: 'Failed to save container configuration',
             configPath: null,
             configKey: null,
           },

@@ -274,6 +274,26 @@ declare global {
             };
           }
       >;
+      saveContainerConfig: (args: {
+        workspacePath: string;
+        config: { setup?: string; start?: string };
+      }) => Promise<
+        | { ok: true }
+        | {
+            ok: false;
+            error: {
+              code:
+                | 'INVALID_ARGUMENT'
+                | 'INVALID_JSON'
+                | 'VALIDATION_FAILED'
+                | 'IO_ERROR'
+                | 'UNKNOWN';
+              message: string;
+              configPath: string | null;
+              configKey: string | null;
+            };
+          }
+      >;
       startContainerRun: (args: {
         workspaceId: string;
         workspacePath: string;

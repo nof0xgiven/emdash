@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { GitBranch, Plus, Loader2, ChevronDown, ArrowUpRight } from 'lucide-react';
+import { GitBranch, Plus, Loader2, ChevronDown, ArrowUpRight, Rocket } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -24,6 +24,7 @@ import {
 } from '@/lib/containerRuns';
 import { activityStore } from '../lib/activityStore';
 import type { Project, Workspace } from '../types/app';
+import ProjectScriptsModal from './ProjectScriptsModal';
 
 const normalizeBaseRef = (ref?: string | null): string | undefined => {
   if (!ref) return undefined;
@@ -357,6 +358,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   const [isSavingBaseBranch, setIsSavingBaseBranch] = useState(false);
   const [branchLoadError, setBranchLoadError] = useState<string | null>(null);
   const [branchReloadToken, setBranchReloadToken] = useState(0);
+  const [scriptsModalOpen, setScriptsModalOpen] = useState(false);
 
   useEffect(() => {
     setBaseBranch(normalizeBaseRef(project.gitInfo.baseRef));
@@ -477,6 +479,23 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                           <ArrowUpRight className="size-3" />
                         </Button>
                       ) : null}
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => setScriptsModalOpen(true)}
+                            >
+                              <Rocket className="size-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Install & Launch Scripts
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       {onDeleteProject ? (
                         <ProjectDeleteButton
                           projectName={project.name}
@@ -559,6 +578,13 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
           </div>
         </div>
       </div>
+
+      <ProjectScriptsModal
+        isOpen={scriptsModalOpen}
+        onClose={() => setScriptsModalOpen(false)}
+        projectPath={project.path}
+        projectName={project.name}
+      />
     </div>
   );
 };
