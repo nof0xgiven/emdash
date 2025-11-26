@@ -28,6 +28,9 @@ import { cn } from '@/lib/utils';
 import { terminalSessionRegistry } from '../terminal/SessionRegistry';
 import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
 import { getInstallCommandForProvider, PROVIDER_IDS } from '@shared/providers/registry';
+import { useReviewAutoStart } from '@/hooks/useReviewAutoStart';
+import ReviewTab from './ReviewTab';
+import { CodeReview, FileText } from 'lucide-react';
 
 declare const window: Window & {
   electronAPI: {
@@ -75,6 +78,39 @@ const ChatInterface: React.FC<Props> = ({
     setActiveTab,
     closeTab,
   } = useWorkspaceProviderTabs(workspace.id, preferredProvider);
+  
+  // Review functionality
+  const { shouldShowReview, reviewStarted } = useReviewAutoStart(workspace);
+  const [showReviewTab, setShowReviewTab] = useState(false);
+  
+  useEffect(() => {
+    // Auto-show review tab when workspace enters review status
+    if (reviewStarted && !showReviewTab) {
+      setShowReviewTab(true);
+    }
+  }, [reviewStarted, showReviewTab]);
+  
+  useEffect(() => {
+    // Auto-switch to review tab when review starts if review tab is available
+    if (reviewStarted && shouldShowReview) {
+      const reviewTabId = 'review';
+      setActiveTab(reviewTabId);
+    }
+  }, [reviewStarted, shouldShowReview, setActiveTab]);
+  
+  // Create combined tabs including review tab
+  const allTabs = useMemo(() => {
+    if (shouldShowReview) {
+      const reviewTab = {
+        id: 'review',
+        provider: 'review' as any,
+        createdAt: Date.now(),
+      };
+      return [reviewTab, ...providerTabs];
+    }
+    return providerTabs;
+  }, [shouldShowReview, providerTabs]);
+  
   const provider = activeTab?.provider ?? preferredProvider;
   const currentProviderStatus = providerStatuses[provider];
   const [addMenuKey, setAddMenuKey] = useState(0);
@@ -667,9 +703,10 @@ const ChatInterface: React.FC<Props> = ({
           <div className="mx-auto max-w-4xl space-y-3">
             <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-2 py-2">
               <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-                {providerTabs.map((tab) => {
-                  const asset = providerAssets[tab.provider];
-                  const meta = providerMeta[tab.provider];
+                {allTabs.map((tab) => {
+                  const isReviewTab = tab.provider === 'review';
+                  const asset = !isReviewTab ? providerAssets[tab.provider] : null;
+                  const meta = !isReviewTab ? providerMeta[tab.provider] : null;
                   const isActive = tab.id === activeTabId;
                   return (
                     <button
@@ -683,7 +720,9 @@ const ChatInterface: React.FC<Props> = ({
                           : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-zinc-800/80'
                       )}
                     >
-                      {asset?.logo ? (
+                      {isReviewTab ? (
+                        <CodeReview className="h-4 w-4 shrink-0" />
+                      ) : asset?.logo ? (
                         <img
                           src={asset.logo}
                           alt={asset.alt || meta?.label || tab.provider}
@@ -694,9 +733,9 @@ const ChatInterface: React.FC<Props> = ({
                         />
                       ) : null}
                       <span className="max-w-[140px] truncate">
-                        {meta?.label || asset?.name || tab.provider}
+                        {isReviewTab ? 'Review' : (meta?.label || asset?.name || tab.provider)}
                       </span>
-                      {providerTabs.length > 1 ? (
+                      {allTabs.length > 1 && tab.provider !== 'review' ? (
                         <span
                           role="button"
                           tabIndex={-1}
@@ -712,7 +751,7 @@ const ChatInterface: React.FC<Props> = ({
                     </button>
                   );
                 })}
-                {!providerTabs.length ? (
+                {!allTabs.length ? (
                   <span className="text-xs text-muted-foreground">No agents yet.</span>
                 ) : null}
               </div>
@@ -788,8 +827,24 @@ const ChatInterface: React.FC<Props> = ({
               provider === 'charm' ? (effectiveTheme === 'dark' ? 'bg-zinc-950' : 'bg-white') : ''
             )}
           >
-            {providerTabs.map((tab) => {
+            {allTabs.map((tab) => {
               const isActive = tab.id === activeTabId;
+              const isReviewTab = tab.provider === 'review';
+              
+              if (isReviewTab) {
+                return (
+                  <div
+                    key={tab.id}
+                    className={cn(
+                      'absolute inset-0 h-full w-full transition-opacity',
+                      isActive ? 'opacity-100' : 'pointer-events-none opacity-0'
+                    )}
+                  >
+                    <ReviewTab workspace={workspace} />
+                  </div>
+                );
+              }
+              
               const paneId = `${tab.provider}-main-${workspace.id}`;
               return (
                 <div
@@ -814,6 +869,14 @@ const ChatInterface: React.FC<Props> = ({
                     keepAlive
                     onActivity={() => {
                       try {
+                        window.electronAPI?.saveMessage?.({
+                          workspaceId: workspace.id,
+                          message: 'terminal_activity',
+                          metadata: {
+                            paneId,
+                            provider: tab.provider,
+                          },
+                        });
                         window.localStorage.setItem(`provider:locked:${workspace.id}`, tab.provider);
                       } catch {}
                     }}
