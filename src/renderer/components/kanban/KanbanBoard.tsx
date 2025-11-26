@@ -4,7 +4,7 @@ import KanbanColumn from './KanbanColumn';
 import KanbanCard from './KanbanCard';
 import { Button } from '../ui/button';
 import { Inbox, Plus } from 'lucide-react';
-import { getAll, setStatus, type KanbanStatus } from '../../lib/kanbanStore';
+import { getAll, getStatus, setStatus, type KanbanStatus } from '../../lib/kanbanStore';
 import {
   subscribeDerivedStatus,
   watchWorkspacePty,
@@ -12,6 +12,7 @@ import {
   watchWorkspaceActivity,
 } from '../../lib/workspaceStatus';
 import { activityStore } from '../../lib/activityStore';
+import { autoStartReviewIfDone } from '../../lib/reviewAutoStart';
 
 const order: KanbanStatus[] = ['todo', 'in-progress', 'done'];
 const titles: Record<KanbanStatus, string> = {
@@ -30,6 +31,24 @@ const KanbanBoard: React.FC<{
   React.useEffect(() => {
     setStatusMap(getAll());
   }, [project.id]);
+
+  const markDone = React.useCallback(
+    (ws: Workspace) => {
+      if (!ws?.id || !ws?.path) return;
+      let changed = false;
+      setStatusMap((prev) => {
+        const cur = prev[ws.id] || 'todo';
+        if (cur === 'done') return prev;
+        changed = true;
+        return { ...prev, [ws.id]: 'done' };
+      });
+      setStatus(ws.id, 'done');
+      if (changed) {
+        void autoStartReviewIfDone(ws, 'done');
+      }
+    },
+    [setStatusMap]
+  );
 
   // Auto-promote to in-progress when derived status reports busy.
   React.useEffect(() => {
@@ -67,12 +86,10 @@ const KanbanBoard: React.FC<{
         // schedule auto-move to done if currently in-progress
         if (existing) clearTimeout(existing);
         const t = setTimeout(() => {
-          setStatusMap((prev) => {
-            const cur = prev[ws.id] || 'todo';
-            if (cur !== 'in-progress') return prev;
-            setStatus(ws.id, 'done');
-            return { ...prev, [ws.id]: 'done' };
-          });
+          const cur = getStatus(ws.id);
+          if (cur === 'in-progress') {
+            markDone(ws);
+          }
           idleTimers.delete(ws.id);
         }, 10_000);
         idleTimers.set(ws.id, t as any);
@@ -92,12 +109,10 @@ const KanbanBoard: React.FC<{
             });
             un?.();
             if (currentlyBusy) return;
-            setStatusMap((prev) => {
-              const cur = prev[ws.id] || 'todo';
-              if (cur !== 'in-progress') return prev;
-              setStatus(ws.id, 'done');
-              return { ...prev, [ws.id]: 'done' };
-            });
+            const cur = getStatus(ws.id);
+            if (cur === 'in-progress') {
+              markDone(ws);
+            }
           }
         );
         if (offExit) offs.push(offExit);
@@ -105,7 +120,7 @@ const KanbanBoard: React.FC<{
     }
     return () => offs.forEach((f) => f());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, project.workspaces?.length]);
+  }, [project.id, project.workspaces?.length, markDone]);
 
   // Promote any workspace with local changes directly to "Ready for review" (done)
   React.useEffect(() => {
@@ -139,11 +154,7 @@ const KanbanBoard: React.FC<{
             });
             un?.();
             if (currentlyBusy) continue;
-            setStatusMap((prev) => {
-              if (prev[ws.id] === 'done') return prev;
-              setStatus(ws.id, 'done');
-              return { ...prev, [ws.id]: 'done' };
-            });
+            markDone(ws);
           }
         } catch {
           // ignore per‑workspace errors
@@ -156,7 +167,7 @@ const KanbanBoard: React.FC<{
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [project.id, project.workspaces?.length]);
+  }, [project.id, project.workspaces?.length, markDone]);
 
   // Promote any workspace with an open PR to "Ready for review" (done)
   React.useEffect(() => {
@@ -190,11 +201,7 @@ const KanbanBoard: React.FC<{
             });
             un?.();
             if (currentlyBusy) continue;
-            setStatusMap((prev) => {
-              if (prev[ws.id] === 'done') return prev;
-              setStatus(ws.id, 'done');
-              return { ...prev, [ws.id]: 'done' };
-            });
+            markDone(ws);
           }
         } catch {
           // ignore
@@ -207,7 +214,7 @@ const KanbanBoard: React.FC<{
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [project.id, project.workspaces?.length]);
+  }, [project.id, project.workspaces?.length, markDone]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -242,11 +249,7 @@ const KanbanBoard: React.FC<{
             });
             un?.();
             if (currentlyBusy) continue;
-            setStatusMap((prev) => {
-              if (prev[ws.id] === 'done') return prev;
-              setStatus(ws.id, 'done');
-              return { ...prev, [ws.id]: 'done' };
-            });
+            markDone(ws);
           }
         } catch {
           // ignore
@@ -269,8 +272,13 @@ const KanbanBoard: React.FC<{
   const hasAny = (project.workspaces?.length ?? 0) > 0;
 
   const handleDrop = (target: KanbanStatus, workspaceId: string) => {
+    const ws = (project.workspaces || []).find((w) => w.id === workspaceId);
+    if (target === 'done' && ws) {
+      markDone(ws);
+      return;
+    }
     setStatus(workspaceId, target);
-    setStatusMap({ ...statusMap, [workspaceId]: target });
+    setStatusMap((prev) => ({ ...prev, [workspaceId]: target }));
   };
 
   return (

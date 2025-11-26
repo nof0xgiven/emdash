@@ -6,6 +6,7 @@ import WorkspaceTerminalPanel from './WorkspaceTerminalPanel';
 import { useRightSidebar } from './ui/right-sidebar';
 import { providerAssets } from '@/providers/assets';
 import { providerMeta } from '@/providers/meta';
+import ReviewPanel from './ReviewPanel';
 import type { Provider } from '../types';
 
 export interface RightSidebarWorkspace {
@@ -99,6 +100,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                 } as any;
                 return (
                   <>
+                    <ReviewPanel
+                      workspaceId={derived.id}
+                      workspacePath={derived.path}
+                      className="border-b border-border"
+                    />
                     <VariantChangesIfAny
                       path={v.path}
                       className="min-h-0 flex-1 border-b border-border"
@@ -109,6 +115,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
               })()
             ) : (
               <>
+                <ReviewPanel
+                  workspaceId={workspace.id}
+                  workspacePath={workspace.path}
+                  className="border-b border-border"
+                />
                 <FileChangesPanel
                   workspaceId={workspace.path}
                   className="min-h-0 flex-1 border-b border-border"
