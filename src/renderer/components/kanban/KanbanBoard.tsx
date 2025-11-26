@@ -271,6 +271,15 @@ const KanbanBoard: React.FC<{
   const handleDrop = (target: KanbanStatus, workspaceId: string) => {
     setStatus(workspaceId, target);
     setStatusMap({ ...statusMap, [workspaceId]: target });
+
+    // When a workspace is moved to "done" (Ready for review), automatically open it
+    // to start the code review workflow
+    if (target === 'done' && onOpenWorkspace) {
+      const workspace = project.workspaces?.find((ws) => ws.id === workspaceId);
+      if (workspace) {
+        onOpenWorkspace(workspace);
+      }
+    }
   };
 
   return (
