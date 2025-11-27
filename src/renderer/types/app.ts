@@ -16,6 +16,10 @@ export interface Project {
     repository: string;
     connected: boolean;
   };
+  reviewAgentConfig?: {
+    enabled: boolean;
+    provider: string;
+  };
   workspaces?: Workspace[];
 }
 

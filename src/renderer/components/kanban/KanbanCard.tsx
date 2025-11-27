@@ -1,5 +1,7 @@
 import React from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import type { Workspace } from '../../types/app';
+import type { ReviewState } from '../../types/chat';
 import { providerAssets } from '../../providers/assets';
 import { providerMeta, type UiProvider } from '../../providers/meta';
 import { activityStore } from '../../lib/activityStore';
@@ -31,6 +33,9 @@ const KanbanCard: React.FC<{
   const multi = ws.metadata?.multiAgent?.enabled ? ws.metadata?.multiAgent : null;
   const providers = Array.isArray(multi?.providers) ? (multi!.providers as UiProvider[]) : [];
   const adminProvider: UiProvider | null = (multi?.selectedProvider as UiProvider) || null;
+
+  // Review state from metadata
+  const review: ReviewState | null = (ws.metadata as { review?: ReviewState | null })?.review ?? null;
 
   const handleClick = () => onOpen?.(ws);
   const [busy, setBusy] = React.useState<boolean>(false);
@@ -130,6 +135,22 @@ const KanbanCard: React.FC<{
                   providerAssets[adminProvider].invertInDark ? 'dark:invert' : ''
                 }`}
               />
+            </span>
+          </div>
+        ) : null}
+
+        {review?.status === 'in-review' ? (
+          <div className="mt-2">
+            <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+              <Spinner size="sm" className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+              In Review
+            </span>
+          </div>
+        ) : review?.status === 'complete' ? (
+          <div className="mt-2">
+            <span className="inline-flex items-center gap-1 rounded-md border border-green-500/40 bg-green-500/10 px-1.5 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3 w-3" />
+              Review Complete
             </span>
           </div>
         ) : null}

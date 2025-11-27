@@ -6,6 +6,7 @@ type ProviderTab = {
   id: string;
   provider: Provider;
   createdAt: number;
+  isReview?: boolean;
 };
 
 type WorkspaceProviderTabsState = {
@@ -88,11 +89,12 @@ function loadFromStorage(workspaceId: string): WorkspaceProviderTabsState | null
           .filter((tab: ProviderTab | null): tab is ProviderTab => Boolean(tab))
       : [];
 
-    // Deduplicate by provider, preserving order
+    // Deduplicate by provider+isReview composite key, preserving order
     const seen = new Set<string>();
     const unique = tabs.filter((tab) => {
-      if (seen.has(tab.provider)) return false;
-      seen.add(tab.provider);
+      const key = `${tab.provider}:${tab.isReview ? 'review' : 'normal'}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
@@ -172,7 +174,7 @@ function updateWorkspaceState(
   const draft = cloneState(current);
   mutate(draft);
 
-  // Normalize providers and dedupe
+  // Normalize providers and dedupe by provider+isReview composite key
   const seen = new Set<string>();
   draft.tabs = draft.tabs
     .map((tab) => ({
@@ -181,8 +183,9 @@ function updateWorkspaceState(
     }))
     .filter((tab) => {
       if (!isValidProviderId(tab.provider)) return false;
-      if (seen.has(tab.provider)) return false;
-      seen.add(tab.provider);
+      const key = `${tab.provider}:${tab.isReview ? 'review' : 'normal'}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
@@ -205,9 +208,9 @@ function updateWorkspaceState(
 function addTab(workspaceId: string, provider: Provider, fallbackProvider: Provider) {
   if (!isValidProviderId(provider)) return;
   updateWorkspaceState(workspaceId, fallbackProvider, (draft) => {
-    const exists = draft.tabs.some((tab) => tab.provider === provider);
+    const exists = draft.tabs.some((tab) => tab.provider === provider && !tab.isReview);
     if (exists) {
-      const existing = draft.tabs.find((tab) => tab.provider === provider);
+      const existing = draft.tabs.find((tab) => tab.provider === provider && !tab.isReview);
       if (existing) draft.activeId = existing.id;
       return;
     }
@@ -219,6 +222,40 @@ function addTab(workspaceId: string, provider: Provider, fallbackProvider: Provi
     draft.tabs = [...draft.tabs, tab];
     draft.activeId = tab.id;
   });
+}
+
+function addReviewTab(workspaceId: string, provider: Provider, fallbackProvider: Provider): string {
+  if (!isValidProviderId(provider)) return '';
+  const reviewTabId = `${provider}-review`;
+  updateWorkspaceState(workspaceId, fallbackProvider, (draft) => {
+    const exists = draft.tabs.some((tab) => tab.isReview && tab.provider === provider);
+    if (exists) {
+      const existing = draft.tabs.find((tab) => tab.isReview && tab.provider === provider);
+      if (existing) draft.activeId = existing.id;
+      return;
+    }
+    const tab: ProviderTab = {
+      id: reviewTabId,
+      provider,
+      createdAt: Date.now(),
+      isReview: true,
+    };
+    draft.tabs = [...draft.tabs, tab];
+    draft.activeId = tab.id;
+  });
+  return reviewTabId;
+}
+
+function getReviewTab(workspaceId: string, fallbackProvider: Provider): ProviderTab | null {
+  const state = ensureWorkspaceState(workspaceId, fallbackProvider);
+  return state.tabs.find((tab) => tab.isReview) ?? null;
+}
+
+function closeReviewTab(workspaceId: string, fallbackProvider: Provider) {
+  const state = ensureWorkspaceState(workspaceId, fallbackProvider);
+  const reviewTab = state.tabs.find((tab) => tab.isReview);
+  if (!reviewTab) return;
+  closeTab(workspaceId, reviewTab.id, fallbackProvider);
 }
 
 function setActive(workspaceId: string, tabId: string, fallbackProvider: Provider) {
@@ -285,9 +322,12 @@ export function useWorkspaceProviderTabs(
   tabs: ProviderTab[];
   activeTabId: string | null;
   activeTab: ProviderTab | null;
+  reviewTab: ProviderTab | null;
   openProviderTab: (provider: Provider) => void;
+  openReviewTab: (provider: Provider) => string;
   setActiveTab: (tabId: string) => void;
   closeTab: (tabId: string) => void;
+  closeReviewTab: () => void;
 } {
   const fallback = useMemo(
     () => (isValidProviderId(preferredProvider) ? preferredProvider : 'codex'),
@@ -304,26 +344,46 @@ export function useWorkspaceProviderTabs(
     if (!workspaceId) {
       return {
         openProviderTab: (_provider: Provider) => undefined,
+        openReviewTab: (_provider: Provider) => '',
         setActiveTab: (_tabId: string) => undefined,
         closeTab: (_tabId: string) => undefined,
+        closeReviewTab: () => undefined,
       };
     }
     return {
       openProviderTab: (provider: Provider) => addTab(workspaceId, provider, fallback),
+      openReviewTab: (provider: Provider) => addReviewTab(workspaceId, provider, fallback),
       setActiveTab: (tabId: string) => setActive(workspaceId, tabId, fallback),
       closeTab: (tabId: string) => closeTab(workspaceId, tabId, fallback),
+      closeReviewTab: () => closeReviewTab(workspaceId, fallback),
     };
   }, [workspaceId, fallback]);
 
   const activeTab =
     snapshot.tabs.find((tab) => tab.id === snapshot.activeId) ?? snapshot.tabs[0] ?? null;
 
+  const reviewTab = snapshot.tabs.find((tab) => tab.isReview) ?? null;
+
   return {
     tabs: snapshot.tabs,
     activeTabId: snapshot.activeId,
     activeTab,
+    reviewTab,
     ...actions,
   };
+}
+
+/**
+ * Opens a review tab for the given workspace and provider.
+ * This is a standalone function that can be called outside of React components.
+ * It updates the in-memory store and persists to localStorage.
+ */
+export function openReviewTabForWorkspace(
+  workspaceId: string,
+  provider: Provider,
+  fallbackProvider: Provider = 'codex'
+): string {
+  return addReviewTab(workspaceId, provider, fallbackProvider);
 }
 
 export type { ProviderTab };

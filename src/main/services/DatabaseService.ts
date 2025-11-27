@@ -28,6 +28,10 @@ export interface Project {
     repository: string;
     connected: boolean;
   };
+  reviewAgentConfig?: {
+    enabled: boolean;
+    provider: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -200,6 +204,29 @@ export class DatabaseService {
       .update(projectsTable)
       .set({
         baseRef: normalized,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .where(eq(projectsTable.id, projectId));
+
+    return this.getProjectById(projectId);
+  }
+
+  async updateReviewAgentConfig(
+    projectId: string,
+    config: { enabled: boolean; provider: string } | null
+  ): Promise<Project | null> {
+    if (this.disabled) return null;
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+
+    const { db } = await getDrizzleClient();
+
+    await db
+      .update(projectsTable)
+      .set({
+        reviewAgentProvider: config?.provider ?? null,
+        reviewAgentEnabled: config?.enabled ? 1 : 0,
         updatedAt: sql`CURRENT_TIMESTAMP`,
       })
       .where(eq(projectsTable.id, projectId));
@@ -462,6 +489,12 @@ export class DatabaseService {
         ? {
             repository: row.githubRepository,
             connected: !!row.githubConnected,
+          }
+        : undefined,
+      reviewAgentConfig: row.reviewAgentProvider
+        ? {
+            enabled: !!row.reviewAgentEnabled,
+            provider: row.reviewAgentProvider,
           }
         : undefined,
       createdAt: row.createdAt,

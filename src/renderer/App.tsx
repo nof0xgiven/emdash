@@ -1095,6 +1095,27 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleRefreshProject = useCallback(async () => {
+    if (!selectedProject) return;
+    try {
+      const freshProjects = await window.electronAPI.getProjects();
+      const freshProject = freshProjects.find((p) => p.id === selectedProject.id);
+      if (freshProject) {
+        // Preserve workspaces from current state since getProjects doesn't include them
+        const updated = withRepoKey({
+          ...freshProject,
+          workspaces: selectedProject.workspaces,
+        });
+        setProjects((prev) =>
+          prev.map((p) => (p.id === updated.id ? updated : p))
+        );
+        setSelectedProject(updated);
+      }
+    } catch (error) {
+      console.error('Failed to refresh project:', error);
+    }
+  }, [selectedProject, withRepoKey]);
+
   const handleStartCreateWorkspaceFromSidebar = useCallback(
     (project: Project) => {
       const targetProject = projects.find((p) => p.id === project.id) || project;
@@ -1335,6 +1356,7 @@ const AppContent: React.FC = () => {
               <ChatInterface
                 workspace={activeWorkspace}
                 projectName={selectedProject.name}
+                project={selectedProject}
                 className="min-h-0 flex-1"
                 initialProvider={activeWorkspaceProvider || undefined}
               />
@@ -1348,6 +1370,7 @@ const AppContent: React.FC = () => {
               onDeleteWorkspace={handleDeleteWorkspace}
               isCreatingWorkspace={isCreatingWorkspace}
               onDeleteProject={handleDeleteProject}
+              onProjectUpdated={handleRefreshProject}
             />
           )}
         </div>

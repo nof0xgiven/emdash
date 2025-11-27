@@ -15,7 +15,13 @@ import { usePlanActivationTerminal } from '@/hooks/usePlanActivation';
 import { log } from '@/lib/logger';
 import { logPlanEvent } from '@/lib/planLogs';
 import { type Provider } from '../types';
+import type { Project } from '../types/app';
 import { Workspace } from '../types/chat';
+import {
+  useReviewAgent,
+  getPendingReviewPrompt,
+  clearPendingReviewPrompt,
+} from '../hooks/useReviewAgent';
 import {
   getContainerRunState,
   subscribeToWorkspaceRunState,
@@ -38,6 +44,7 @@ declare const window: Window & {
 interface Props {
   workspace: Workspace;
   projectName: string;
+  project?: Project;
   className?: string;
   initialProvider?: Provider;
 }
@@ -45,10 +52,40 @@ interface Props {
 const ChatInterface: React.FC<Props> = ({
   workspace,
   projectName: _projectName,
+  project,
   className,
   initialProvider,
 }) => {
   const { toast } = useToast();
+
+  // Handler to update workspace review state and persist it
+  const handleReviewStateChange = useCallback(
+    async (state: import('../types/chat').ReviewState) => {
+      try {
+        // Update workspace metadata with review state
+        const updatedWorkspace = {
+          ...workspace,
+          metadata: {
+            ...workspace.metadata,
+            review: state,
+          },
+        };
+        await (window as unknown as { electronAPI: { saveWorkspace: (ws: unknown) => Promise<{ success: boolean }> } }).electronAPI.saveWorkspace(updatedWorkspace);
+      } catch (error) {
+        console.error('Failed to save review state:', error);
+      }
+    },
+    [workspace]
+  );
+
+  // Review agent hook for auto-starting reviews
+  useReviewAgent({
+    project: project ?? { id: '', name: '', path: '', gitInfo: { isGitRepo: false } },
+    workspaceId: workspace.id,
+    workspacePath: workspace.path,
+    onReviewStateChange: handleReviewStateChange,
+    autoStart: Boolean(project),
+  });
   const { effectiveTheme } = useTheme();
   const [isProviderInstalled, setIsProviderInstalled] = useState<boolean | null>(null);
   const [providerStatuses, setProviderStatuses] = useState<
@@ -71,9 +108,12 @@ const ChatInterface: React.FC<Props> = ({
     tabs: providerTabs,
     activeTab,
     activeTabId,
+    reviewTab,
     openProviderTab,
+    openReviewTab,
     setActiveTab,
     closeTab,
+    closeReviewTab,
   } = useWorkspaceProviderTabs(workspace.id, preferredProvider);
   const provider = activeTab?.provider ?? preferredProvider;
   const currentProviderStatus = providerStatuses[provider];
@@ -461,6 +501,66 @@ const ChatInterface: React.FC<Props> = ({
     enabled: isTerminal,
   });
 
+  // Review prompt injection for review tabs
+  // Uses the pending review prompt stored in localStorage by useReviewAgent
+  const isReviewTab = activeTab?.isReview === true;
+  const reviewPrompt = useMemo(() => {
+    if (!isReviewTab || !isTerminal) return null;
+    return getPendingReviewPrompt(workspace.id);
+  }, [isReviewTab, isTerminal, workspace.id]);
+
+  // Inject review prompt when the review tab's PTY is ready
+  useEffect(() => {
+    if (!reviewPrompt || !isReviewTab || !isTerminal) return;
+
+    const ptyId = `${provider}-main-${workspace.id}`;
+    let sent = false;
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const send = () => {
+      if (sent) return;
+      try {
+        (window as any).electronAPI?.ptyInput?.({ id: ptyId, data: reviewPrompt + '\n' });
+        clearPendingReviewPrompt(workspace.id);
+        sent = true;
+      } catch (error) {
+        console.error('Failed to send review prompt:', error);
+      }
+    };
+
+    // Listen for PTY data to detect when it's ready
+    const offData = (window as any).electronAPI?.onPtyData?.(ptyId, () => {
+      // Debounce: send after a short period of silence
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (!sent) send();
+      }, 1200);
+    });
+
+    // Listen for PTY started event
+    const offStarted = (window as any).electronAPI?.onPtyStarted?.((info: { id: string }) => {
+      if (info?.id === ptyId) {
+        // Start a timer in case no output arrives
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          if (!sent) send();
+        }, 2000);
+      }
+    });
+
+    // Fallback timeout
+    const fallbackTimer = setTimeout(() => {
+      if (!sent) send();
+    }, 10000);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      if (silenceTimer) clearTimeout(silenceTimer);
+      offStarted?.();
+      offData?.();
+    };
+  }, [reviewPrompt, isReviewTab, isTerminal, provider, workspace.id]);
+
   // Ensure a provider is stored for this workspace so fallbacks can subscribe immediately
   useEffect(() => {
     try {
@@ -671,6 +771,7 @@ const ChatInterface: React.FC<Props> = ({
                   const asset = providerAssets[tab.provider];
                   const meta = providerMeta[tab.provider];
                   const isActive = tab.id === activeTabId;
+                  const isReviewTab = tab.isReview === true;
                   return (
                     <button
                       key={tab.id}
@@ -680,7 +781,8 @@ const ChatInterface: React.FC<Props> = ({
                         'group flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium transition-colors',
                         isActive
                           ? 'bg-background text-foreground shadow-sm dark:bg-zinc-800'
-                          : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-zinc-800/80'
+                          : 'text-muted-foreground hover:bg-background/60 dark:hover:bg-zinc-800/80',
+                        isReviewTab && isActive && 'ring-1 ring-amber-500/50'
                       )}
                     >
                       {asset?.logo ? (
@@ -696,6 +798,11 @@ const ChatInterface: React.FC<Props> = ({
                       <span className="max-w-[140px] truncate">
                         {meta?.label || asset?.name || tab.provider}
                       </span>
+                      {isReviewTab ? (
+                        <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                          Review
+                        </span>
+                      ) : null}
                       {providerTabs.length > 1 ? (
                         <span
                           role="button"
@@ -802,7 +909,11 @@ const ChatInterface: React.FC<Props> = ({
                   <TerminalPane
                     id={paneId}
                     cwd={workspace.path}
-                    shell={providerMeta[tab.provider].cli}
+                    shell={
+                      tab.isReview && providerMeta[tab.provider].autoApproveFlag
+                        ? `${providerMeta[tab.provider].cli} ${providerMeta[tab.provider].autoApproveFlag}`
+                        : providerMeta[tab.provider].cli
+                    }
                     env={
                       planEnabled
                         ? {

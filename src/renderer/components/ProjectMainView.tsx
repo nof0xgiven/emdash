@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { GitBranch, Plus, Loader2, ChevronDown, ArrowUpRight, Rocket } from 'lucide-react';
+import { GitBranch, Plus, Loader2, ChevronDown, ArrowUpRight, Rocket, Bug } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -25,6 +25,7 @@ import {
 import { activityStore } from '../lib/activityStore';
 import type { Project, Workspace } from '../types/app';
 import ProjectScriptsModal from './ProjectScriptsModal';
+import ReviewAgentModal from './ReviewAgentModal';
 
 const normalizeBaseRef = (ref?: string | null): string | undefined => {
   if (!ref) return undefined;
@@ -338,6 +339,8 @@ interface ProjectMainViewProps {
   onDeleteWorkspace: (project: Project, workspace: Workspace) => void | Promise<void>;
   isCreatingWorkspace?: boolean;
   onDeleteProject?: (project: Project) => void | Promise<void>;
+  /** Called when project settings are updated and data should be refreshed */
+  onProjectUpdated?: () => void;
 }
 
 const ProjectMainView: React.FC<ProjectMainViewProps> = ({
@@ -348,6 +351,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   onDeleteWorkspace,
   isCreatingWorkspace = false,
   onDeleteProject,
+  onProjectUpdated,
 }) => {
   const { toast } = useToast();
   const [baseBranch, setBaseBranch] = useState<string | undefined>(() =>
@@ -359,6 +363,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   const [branchLoadError, setBranchLoadError] = useState<string | null>(null);
   const [branchReloadToken, setBranchReloadToken] = useState(0);
   const [scriptsModalOpen, setScriptsModalOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   useEffect(() => {
     setBaseBranch(normalizeBaseRef(project.gitInfo.baseRef));
@@ -496,6 +501,23 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => setReviewModalOpen(true)}
+                            >
+                              <Bug className="size-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Review Agent
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       {onDeleteProject ? (
                         <ProjectDeleteButton
                           projectName={project.name}
@@ -584,6 +606,15 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
         onClose={() => setScriptsModalOpen(false)}
         projectPath={project.path}
         projectName={project.name}
+      />
+
+      <ReviewAgentModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        projectId={project.id}
+        projectName={project.name}
+        initialConfig={project.reviewAgentConfig}
+        onConfigSaved={onProjectUpdated}
       />
     </div>
   );

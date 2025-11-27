@@ -8,6 +8,10 @@ export interface ProjectSettings {
   gitRemote?: string;
   gitBranch?: string;
   baseRef?: string;
+  reviewAgentConfig?: {
+    enabled: boolean;
+    provider: string;
+  };
 }
 
 class ProjectSettingsService {
@@ -41,6 +45,21 @@ class ProjectSettingsService {
     return this.toSettings(project);
   }
 
+  async updateReviewAgentConfig(
+    projectId: string,
+    config: { enabled: boolean; provider: string } | null
+  ): Promise<ProjectSettings> {
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+
+    const project = await databaseService.updateReviewAgentConfig(projectId, config);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    return this.toSettings(project);
+  }
+
   private toSettings(project: Project): ProjectSettings {
     return {
       projectId: project.id,
@@ -49,6 +68,7 @@ class ProjectSettingsService {
       gitRemote: project.gitInfo.remote,
       gitBranch: project.gitInfo.branch,
       baseRef: project.gitInfo.baseRef,
+      reviewAgentConfig: project.reviewAgentConfig,
     };
   }
 }
