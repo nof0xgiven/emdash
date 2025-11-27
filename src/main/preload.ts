@@ -118,6 +118,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('projectSettings:get', { projectId }),
   updateProjectSettings: (args: { projectId: string; baseRef: string }) =>
     ipcRenderer.invoke('projectSettings:update', args),
+  updateReviewAgentConfig: (args: {
+    projectId: string;
+    config: { enabled: boolean; provider: string } | null;
+  }) => ipcRenderer.invoke('projectSettings:updateReviewAgent', args),
   fetchProjectBaseRef: (args: { projectId: string; projectPath: string }) =>
     ipcRenderer.invoke('projectSettings:fetchBaseRef', args),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),

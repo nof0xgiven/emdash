@@ -4,7 +4,7 @@ import KanbanColumn from './KanbanColumn';
 import KanbanCard from './KanbanCard';
 import { Button } from '../ui/button';
 import { Inbox, Plus } from 'lucide-react';
-import { getAll, setStatus, type KanbanStatus } from '../../lib/kanbanStore';
+import { getAll, setStatus, setReviewPending, type KanbanStatus } from '../../lib/kanbanStore';
 import {
   subscribeDerivedStatus,
   watchWorkspacePty,
@@ -260,6 +260,28 @@ const KanbanBoard: React.FC<{
       window.clearInterval(id);
     };
   }, [project.id, project.workspaces?.length]);
+
+  // Set review pending when workspace moves to "done" and review agent is enabled
+  const prevStatusMapRef = React.useRef<Record<string, KanbanStatus>>({});
+  React.useEffect(() => {
+    const reviewEnabled = project.reviewAgentConfig?.enabled === true;
+    if (!reviewEnabled) return;
+
+    const prevMap = prevStatusMapRef.current;
+    const wsList = project.workspaces || [];
+
+    for (const ws of wsList) {
+      const prevStatus = prevMap[ws.id];
+      const currStatus = statusMap[ws.id] || 'todo';
+
+      // Detect transition to "done"
+      if (prevStatus !== 'done' && currStatus === 'done') {
+        setReviewPending(ws.id, true);
+      }
+    }
+
+    prevStatusMapRef.current = { ...statusMap };
+  }, [statusMap, project.workspaces, project.reviewAgentConfig?.enabled]);
 
   const byStatus: Record<KanbanStatus, Workspace[]> = { todo: [], 'in-progress': [], done: [] };
   for (const ws of project.workspaces || []) {

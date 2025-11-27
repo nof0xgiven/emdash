@@ -15,6 +15,13 @@
       "when": 1761240000000,
       "tag": "0001_add_base_ref_to_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761330000000,
+      "tag": "0002_add_review_agent_to_projects",
+      "breakpoints": true
     }
   ]
 }

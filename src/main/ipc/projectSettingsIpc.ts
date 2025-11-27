@@ -5,6 +5,10 @@ import { worktreeService } from '../services/WorktreeService';
 
 type ProjectSettingsArgs = { projectId: string };
 type UpdateProjectSettingsArgs = { projectId: string; baseRef: string };
+type UpdateReviewAgentArgs = {
+  projectId: string;
+  config: { enabled: boolean; provider: string } | null;
+};
 
 const resolveProjectId = (input: ProjectSettingsArgs | string | undefined): string => {
   if (!input) return '';
@@ -86,6 +90,24 @@ export function registerProjectSettingsIpc() {
         };
       } catch (error) {
         log.error('Failed to fetch base branch', error);
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'projectSettings:updateReviewAgent',
+    async (_event, args: UpdateReviewAgentArgs | undefined) => {
+      try {
+        const projectId = args?.projectId;
+        if (!projectId) {
+          throw new Error('projectId is required');
+        }
+        const config = args?.config ?? null;
+        const settings = await projectSettingsService.updateReviewAgentConfig(projectId, config);
+        return { success: true, settings };
+      } catch (error) {
+        log.error('Failed to update review agent config', error);
         return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     }

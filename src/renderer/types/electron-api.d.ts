@@ -8,6 +8,10 @@ type ProjectSettingsPayload = {
   gitRemote?: string;
   gitBranch?: string;
   baseRef?: string;
+  reviewAgentConfig?: {
+    enabled: boolean;
+    provider: string;
+  };
 };
 
 export {};
@@ -150,6 +154,14 @@ declare global {
         error?: string;
       }>;
       updateProjectSettings: (args: { projectId: string; baseRef: string }) => Promise<{
+        success: boolean;
+        settings?: ProjectSettingsPayload;
+        error?: string;
+      }>;
+      updateReviewAgentConfig: (args: {
+        projectId: string;
+        config: { enabled: boolean; provider: string } | null;
+      }) => Promise<{
         success: boolean;
         settings?: ProjectSettingsPayload;
         error?: string;
@@ -654,6 +666,14 @@ export interface ElectronAPI {
     error?: string;
   }>;
   updateProjectSettings: (args: { projectId: string; baseRef: string }) => Promise<{
+    success: boolean;
+    settings?: ProjectSettingsPayload;
+    error?: string;
+  }>;
+  updateReviewAgentConfig: (args: {
+    projectId: string;
+    config: { enabled: boolean; provider: string } | null;
+  }) => Promise<{
     success: boolean;
     settings?: ProjectSettingsPayload;
     error?: string;

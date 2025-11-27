@@ -12,6 +12,8 @@ export const projects = sqliteTable(
     baseRef: text('base_ref'),
     githubRepository: text('github_repository'),
     githubConnected: integer('github_connected').notNull().default(0),
+    reviewAgentProvider: text('review_agent_provider'),
+    reviewAgentEnabled: integer('review_agent_enabled').notNull().default(0),
     createdAt: text('created_at')
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),

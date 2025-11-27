@@ -2,6 +2,13 @@ import { type LinearIssueSummary } from './linear';
 import { type GitHubIssueSummary } from './github';
 import { type JiraIssueSummary } from './jira';
 
+export interface ReviewState {
+  status: 'pending' | 'in-review' | 'complete';
+  tabId: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
 export interface WorkspaceMetadata {
   linearIssue?: LinearIssueSummary | null;
   githubIssue?: GitHubIssueSummary | null;
@@ -78,6 +85,7 @@ export interface WorkspaceMetadata {
       | 'codebuff'
       | null;
   } | null;
+  review?: ReviewState | null;
 }
 
 export interface Workspace {
