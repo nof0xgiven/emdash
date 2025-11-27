@@ -60,7 +60,7 @@ interface UseReviewAgentOptions {
 }
 
 interface UseReviewAgentReturn {
-  startReview: () => void;
+  startReview: (force?: boolean) => void;
   canStartReview: boolean;
   reviewEnabled: boolean;
 }
@@ -83,9 +83,12 @@ export function useReviewAgent({
   const reviewEnabled = project.reviewAgentConfig?.enabled === true;
   const reviewProvider = project.reviewAgentConfig?.provider ?? 'claude';
 
-  // Check if we can start a review (only if single tab is open)
+  // Check if we can start a review (only if single tab is open, unless pending review exists)
   const canStartReview = useCallback(() => {
     if (!reviewEnabled) return false;
+
+    // If a pending review exists, bypass the tab-count restriction for auto-start
+    if (isReviewPending(workspaceId)) return true;
 
     try {
       const storageKey = `emdash:providerTabs:v1:${workspaceId}`;
@@ -102,58 +105,58 @@ export function useReviewAgent({
     }
   }, [reviewEnabled, workspaceId]);
 
-  const startReview = useCallback(() => {
-    if (!reviewEnabled) {
-      return;
-    }
+  const startReview = useCallback(
+    (force = false) => {
+      if (!reviewEnabled) {
+        return;
+      }
 
-    if (!canStartReview()) {
+      if (!force && !canStartReview()) {
+        toast({
+          title: 'Cannot start review',
+          description: 'Review can only start when there is a single tab open',
+          variant: 'destructive' as const,
+        });
+        return;
+      }
+
+      // Prevent duplicate starts
+      const startKey = `${workspaceId}:${Date.now()}`;
+      if (startedRef.current.has(workspaceId)) {
+        return;
+      }
+      startedRef.current.add(workspaceId);
+
+      // Open review tab using the proper in-memory store
+      // This ensures ChatInterface's useSyncExternalStore receives the update
+      const reviewTabId = openReviewTabForWorkspace(
+        workspaceId,
+        reviewProvider as any,
+        reviewProvider as any
+      );
+
+      // Update review state to in-review
+      const reviewState: ReviewState = {
+        status: 'in-review',
+        tabId: reviewTabId || `${reviewProvider}-review`,
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+      };
+
+      onReviewStateChange?.(reviewState);
+
+      // Store the review prompt for ChatInterface to inject via useInitialPromptInjection
+      // This ensures the prompt is sent only after the PTY is ready
+      // We send just the prompt text since Claude CLI is already running in the terminal
+      setPendingReviewPrompt(workspaceId, REVIEW_PROMPT);
+
       toast({
-        title: 'Cannot start review',
-        description: 'Review can only start when there is a single tab open',
-        variant: 'destructive' as const,
+        title: 'Review started',
+        description: 'Code review agent is analyzing your changes',
       });
-      return;
-    }
-
-    // Prevent duplicate starts
-    const startKey = `${workspaceId}:${Date.now()}`;
-    if (startedRef.current.has(workspaceId)) {
-      return;
-    }
-    startedRef.current.add(workspaceId);
-
-    // Open review tab using the proper in-memory store
-    // This ensures ChatInterface's useSyncExternalStore receives the update
-    const reviewTabId = openReviewTabForWorkspace(workspaceId, reviewProvider as any, reviewProvider as any);
-
-    // Update review state to in-review
-    const reviewState: ReviewState = {
-      status: 'in-review',
-      tabId: reviewTabId || `${reviewProvider}-review`,
-      startedAt: new Date().toISOString(),
-      completedAt: null,
-    };
-
-    onReviewStateChange?.(reviewState);
-
-    // Store the review prompt for ChatInterface to inject via useInitialPromptInjection
-    // This ensures the prompt is sent only after the PTY is ready
-    // We send just the prompt text since Claude CLI is already running in the terminal
-    setPendingReviewPrompt(workspaceId, REVIEW_PROMPT);
-
-    toast({
-      title: 'Review started',
-      description: 'Code review agent is analyzing your changes',
-    });
-  }, [
-    canStartReview,
-    onReviewStateChange,
-    reviewEnabled,
-    reviewProvider,
-    toast,
-    workspaceId,
-  ]);
+    },
+    [canStartReview, onReviewStateChange, reviewEnabled, reviewProvider, toast, workspaceId]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -168,13 +171,14 @@ export function useReviewAgent({
     autoStartCheckedRef.current = true;
 
     // Check if review is pending for this workspace
-    if (isReviewPending(workspaceId) && reviewEnabled && canStartReview()) {
+    if (isReviewPending(workspaceId) && reviewEnabled) {
       // Clear the pending flag first
       clearReviewPending(workspaceId);
 
       // Start review after a short delay to ensure terminal is ready
+      // Use force=true to bypass canStartReview check for auto-start
       const timer = setTimeout(() => {
-        startReview();
+        startReview(true);
       }, 500);
 
       return () => clearTimeout(timer);
